@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "outDir": "dist",
+    "module": "commonjs",
+    "lib": ["es6", "dom"],
+    "target": "es2015",
+    "declaration": true,
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "types": ["node", "mocha", "pixi.js"],
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules/**/*",
+    "bin",
+    "lib"
+  ]
+}
