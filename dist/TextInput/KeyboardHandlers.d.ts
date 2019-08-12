@@ -1,4 +1,4 @@
-export declare class Keyboardonrs {
+export declare class KeyboardHandlers {
     constructor();
     private onCopy;
     private onPaste;

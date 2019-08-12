@@ -30,15 +30,20 @@ PIXI.loader.load((loader, resources) => {
     });
 
     defaultTextInput.onBlur(() => {
-        console.log('DEFAULT TEXT INPUT FOCUSED');
+        console.log('DEFAULT TEXT INPUT BLURRED');
     });
 
     defaultTextInput.onChange((text)=> {
         console.log('DEFAULT TEXT CHANGE:', text);
     });
 
+    defaultTextInput.onSubmit((text)=> {
+        console.log('DEFAULT TEXT SUBMIT:', text);
+        defaultTextInput.clear();
+    });
+
     const styledTextInput = new PixiText.TextField('small', {
-        width: '250px',
+        width: '60px',
         height: '20px',
         cursorHeight: '18px',
         fontColor: 0xe00000, // red,
@@ -50,6 +55,7 @@ PIXI.loader.load((loader, resources) => {
         backgroundColor: 0x31cf15, // green
         highlightColor: 0x083800, // dark green,
         borderOpacity: .5, // 50% transparent
+        yPadding: 5,
     });
 
     stage.addChild(styledTextInput);
@@ -61,11 +67,16 @@ PIXI.loader.load((loader, resources) => {
     });
 
     styledTextInput.onBlur(() => {
-        console.log('STYLED TEXT INPUT FOCUSED');
+        console.log('STYLED TEXT INPUT BLURRED');
     });
 
-    styledTextInput.onChange(() => {
-        console.log('STYLED TEXT CHANGE', text);
+    styledTextInput.onChange((text) => {
+        console.log('STYLED TEXT CHANGE:', text);
+    });
+
+    styledTextInput.onSubmit((text) => {
+        console.log('STYLED TEXT SUBMIT:', text);
+        styledTextInput.clear();
     });
 
     setInterval(() => {

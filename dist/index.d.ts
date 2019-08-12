@@ -1,1 +1,2 @@
-export { TextField } from "./TextInput/TextField";
+import TextField from './TextInput/TextField';
+export { TextField };
