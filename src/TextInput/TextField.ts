@@ -1,46 +1,9 @@
 import { parseLengthMeasurements } from "../utils";
 import KeyboardHandlerMixin from "../mixins/KeyboardHandlers";
 
-type ValidMeasurement = {
-    value: number,
-    type: string, // percent or pixel
-}
+import { InputStyleOptionsParams, InputStyleOptions } from "../types";
 
-export type StyleOptions = {
-    width?: ValidMeasurement,
-    height?: ValidMeasurement,
-    cursorHeight: ValidMeasurement,
-    cursorWidth: number,
-    borderWidth?: number,
-    borderColor?: number,
-    fontColor: number,
-    highlightedFontColor: number,
-    cursorColor: number,
-    backgroundColor: number,
-    highlightedBackgroundColor: number,
-    borderOpacity: number,
-    xPadding: number,
-    yPadding: number,
-}
-
-export type StyleOptionsParams = {
-    width?: number | string,
-    height?: number | string,
-    borderWidth?: number,
-    borderColor?: number,
-    fontColor?: number,
-    highlightedFontColor?: number,
-    cursorColor?: number,
-    cursorHeight?: number | string,
-    cursorWidth: number,
-    backgroundColor?: number,
-    highlightedBackgroundColor?: number,
-    borderOpacity?: number,
-    xPadding?: number,
-    yPadding?: number,
-}
-
-const defaultStyleOptions = function() : StyleOptionsParams {
+const defaultStyleOptions = function() : InputStyleOptionsParams {
     return {
         width: '500px',
         height: '16px',
@@ -62,7 +25,7 @@ const defaultStyleOptions = function() : StyleOptionsParams {
 const lengthFieldsToValidate = ["width", "height", "cursorHeight"];
 
 class TextField extends PIXI.Container {
-    private styleOptions: StyleOptions = {} as StyleOptions;
+    private styleOptions: InputStyleOptions = {} as InputStyleOptions;
     private cursorSprite: PIXI.Graphics = new PIXI.Graphics();
     private textbox: PIXI.Graphics = new PIXI.Graphics();
     private textboxMask: PIXI.Graphics = new PIXI.Graphics();
@@ -87,7 +50,7 @@ class TextField extends PIXI.Container {
     private onBlurHandler: Function = () => {};
     private onChangeHandler: Function = () => {};
     private onSubmitHandler: Function = () => {};
-    constructor(font: string, styleOptions?: StyleOptionsParams) {
+    constructor(font: string, styleOptions?: InputStyleOptionsParams) {
         super();
         const _defaultStyleOptions = { ...defaultStyleOptions() };
         if(styleOptions) {
@@ -126,7 +89,7 @@ class TextField extends PIXI.Container {
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
     }
 
-    public updateStyle(styleOptions: StyleOptionsParams) {
+    public updateStyle(styleOptions: InputStyleOptionsParams) {
         for(const key in styleOptions) {
             if(lengthFieldsToValidate.includes(key)) {
                 const parsed = parseLengthMeasurements(styleOptions[key]);

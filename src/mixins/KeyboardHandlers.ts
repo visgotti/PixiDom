@@ -35,8 +35,8 @@ export default function <TBase extends Constructor>(Base: TBase){
             document.addEventListener("paste", this.onPaste);
             document.addEventListener("keypress", this.onKeyPress);
             document.addEventListener("keydown", this.onKeyDown);
-
         }
+
         public unregisterHandlers() {
             document.removeEventListener("copy", this.onCopy);
             document.removeEventListener("cut", this.onCut);
