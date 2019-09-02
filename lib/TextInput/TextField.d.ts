@@ -44,18 +44,25 @@ declare class TextField extends PIXI.Container {
     private inFocus;
     private cursorIndex;
     private clickedTimestamp;
+    private cursorAnimationFrame;
+    private lastCursorTs;
+    private accCursorTime;
+    private toggleCursorTime;
+    private cursorIsVisible;
     private _text;
+    private _visible;
     private overflowOffsetX;
     private overflowOffsetY;
     private dragIndexStart;
     private dragIndexEnd;
     private inDrag;
     submitKeyCodes: Array<number>;
+    maxCharacterLength: number;
     private onFocusHandler;
     private onBlurHandler;
     private onChangeHandler;
     private onSubmitHandler;
-    constructor(font: string, styleOptions?: StyleOptionsParams);
+    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?: any);
     updateStyle(styleOptions: StyleOptionsParams): void;
     private redraw;
     private redrawCursor;
@@ -89,8 +96,14 @@ declare class TextField extends PIXI.Container {
     focus(): void;
     blur(): void;
     change(value: any): void;
+    private startCursorAnimation;
+    private stopCursorAnimation;
+    private blinkCursor;
     private checkForOutsideClick;
     text: string;
+    visible: any;
+    show(): void;
+    hide(): void;
 }
 declare const _default: {
     new (...args: any[]): {

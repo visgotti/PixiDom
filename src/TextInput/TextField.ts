@@ -73,7 +73,15 @@ class TextField extends PIXI.Container {
     private cursorIndex: number = -1;
     private clickedTimestamp: number;
 
+    private cursorAnimationFrame: any;
+    private lastCursorTs = Date.now();
+    private accCursorTime: number = 0;
+    private toggleCursorTime: number = 500;
+    private cursorIsVisible: boolean = true;
+
     private _text: string = "";
+
+    private _visible: boolean = true;
 
     private overflowOffsetX: number = 0;
     private overflowOffsetY: number = 0;
@@ -82,12 +90,13 @@ class TextField extends PIXI.Container {
     private inDrag: boolean = false;
 
     public submitKeyCodes: Array<number> = [13];
+    public maxCharacterLength: number = null;
 
     private onFocusHandler: Function = () => {};
     private onBlurHandler: Function = () => {};
     private onChangeHandler: Function = () => {};
     private onSubmitHandler: Function = () => {};
-    constructor(font: string, styleOptions?: StyleOptionsParams) {
+    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?) {
         super();
         const _defaultStyleOptions = { ...defaultStyleOptions() };
         if(styleOptions) {
@@ -96,6 +105,8 @@ class TextField extends PIXI.Container {
             }
         }
 
+        this.maxCharacterLength = maxCharacterLength ? maxCharacterLength : null;
+    
         this.buttonMode = true;
         this.interactive = true;
 
@@ -124,6 +135,10 @@ class TextField extends PIXI.Container {
         this.updateStyle(_defaultStyleOptions);
 
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
+
+        this.show();
+
+
     }
 
     public updateStyle(styleOptions: StyleOptionsParams) {
@@ -150,6 +165,7 @@ class TextField extends PIXI.Container {
 
     private redrawCursor() {
         if(!this.inFocus) {
+            this.cursorIsVisible = false;
             this.cursorSprite.visible = false;
             return;
         }
@@ -173,8 +189,10 @@ class TextField extends PIXI.Container {
 
         // cursor is only visible if theres no range
         if(this.getSelectedRange()) {
+            this.cursorIsVisible = false;
             this.cursorSprite.visible = false;
         } else {
+            this.cursorIsVisible = true;
             this.cursorSprite.visible = true;
         }
     }
@@ -245,22 +263,28 @@ class TextField extends PIXI.Container {
         ({ value, type } = this.styleOptions.width);
         const maxWidth = type === 'pixel' ? value : totalWidth * (value/100);
 
-        const width = Math.max(maxWidth, this.getCursorXFromIndex(this.text.length));
         const range = this.getSelectedRange();
 
         this.textbox.drawRect(0, 0, maxWidth, height);
         this.textbox.endFill();
 
         if(range) {
-            const start = range.x.start - this.overflowOffsetX;
+            let start = range.x.start - this.overflowOffsetX;
             const end = range.x.end - this.overflowOffsetX;
             this.textbox.beginFill(this.styleOptions.highlightedBackgroundColor, 1);
             let _width = end-start;
-            if(start + _width > maxWidth) {
+
+            if(start + _width >= maxWidth) {
                 _width = maxWidth - start;
             } else {
                 _width = end-start;
             }
+
+            if(start + _width === maxWidth && _width > maxWidth) {
+                start = 0;
+                _width = maxWidth;
+            }
+        
             this.textbox.drawRect(start, 0, _width, height);
             this.textbox.endFill();
         }
@@ -382,6 +406,7 @@ class TextField extends PIXI.Container {
 
     private replaceSelectedWith(replaceWith) : string {
         const replaceWithArray = replaceWith.split('');
+        
         const replacedLength = replaceWithArray.length;
 
         let oldTextValue = this.text;
@@ -502,6 +527,7 @@ class TextField extends PIXI.Container {
         if(!this.inFocus) {
             document.addEventListener('mousedown', this.checkForOutsideClick);
             this.inFocus = true;
+            this.startCursorAnimation();
             this.emit('focus');
             this.onFocusHandler();
         }
@@ -511,6 +537,7 @@ class TextField extends PIXI.Container {
         if(this.inFocus) {
             document.removeEventListener('mousedown', this.checkForOutsideClick);
             this.inFocus = false;
+            this.stopCursorAnimation();
             this.clearRange();
             this.redraw();
             this.emit('blur');
@@ -527,6 +554,29 @@ class TextField extends PIXI.Container {
         }
     }
 
+    private startCursorAnimation() {
+        if(this.cursorAnimationFrame) {
+            this.stopCursorAnimation();
+        }
+        this.blinkCursor();
+    }
+
+    private stopCursorAnimation() {
+        this.cursorSprite.visible = false;
+        if(this.cursorAnimationFrame) {
+            clearTimeout(this.cursorAnimationFrame);
+            this.cursorAnimationFrame = null;
+            this.accCursorTime = 0;
+        }
+    }
+
+    private blinkCursor() {
+        if(this.cursorIsVisible) {
+            this.cursorSprite.visible = !this.cursorSprite.visible;
+        }
+        this.cursorAnimationFrame = setTimeout(this.blinkCursor.bind(this), this.toggleCursorTime);
+    }
+
     private checkForOutsideClick(e) {
         if(e.timeStamp !== this.clickedTimestamp) {
             this.blur();
@@ -539,6 +589,28 @@ class TextField extends PIXI.Container {
 
     set text(value) {
         this.change(value);
+    }
+
+    set visible(value) {
+        super.visible = value;
+        this._visible = value;
+        if(value) {
+            this.startCursorAnimation();
+        } else {
+            this.stopCursorAnimation();
+        }
+    }
+
+    get visible() {
+        return this._visible;
+    }
+
+    public show() {
+        this.visible = true;
+    }
+
+    public hide() {
+        this.visible = false;
     }
 }
 

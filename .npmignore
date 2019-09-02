@@ -1,0 +1,6 @@
+.gitignore
+node_modules
+test
+src
+tsconfig.json
+example

@@ -1,7 +1,7 @@
 {
-  "name": "pixidom",
-  "version": "0.0.1",
-  "description": "",
+  "name": "pixidom.js",
+  "version": "0.0.2",
+  "description": "Simple to use lib that immitates dom elements in pixi.js",
   "scripts": {
     "build": "webpack --config ./webpack.config.js",
     "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit"

@@ -4,7 +4,7 @@ module.exports = function() {
     return {
         entry: path.join(__dirname, "src/index.ts"),
         output: {
-            path: path.join(__dirname, "dist"),
+            path: path.join(__dirname, "lib"),
             filename: "pixi-bitmap-text-input.js",
             libraryTarget: "var",
             library: "PixiText"
