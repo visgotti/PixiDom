@@ -27,7 +27,7 @@ const lengthFieldsToValidate = ["width", "height"];
 const validEventNames = ['mousedown', 'mouseup', 'mouseover'];
 
 class Element extends PIXI.Container {
-    public elementChildren: Array<Element>;
+    private elements: Array<Element>= [];
     private inDrag: Boolean = false;
     private mouseIsDown: Boolean = false;
     private dragPosition = null;
@@ -36,15 +36,18 @@ class Element extends PIXI.Container {
     private _mouseupHandler: Function = null;
     private _mouseoverHandler: Function = null;
     private _mouseleaveHandler: Function = null;
-
     private _doubleClickHandler: Function = null;
 
     private _dragendHandler: Function = null;
     private _dragstartHandler: Function = null;
 
     private doubleClickTimeout: Timeout = null;
+
+    private _addChild: Function;
+
     constructor() {
         super();
+        this._addChild = super.addChild;
     }
 
     set mousedownHandler(handler) { this._setEventNameHandler("mousedown", handler); }
@@ -74,6 +77,19 @@ class Element extends PIXI.Container {
             this.buttonMode = true;
             this.interactive = true;
         }
+    }
+
+    public addElement (element: Element) {
+        if(!(element instanceof Element)) {
+            throw new Error('addElement called with a non element object')
+        }
+        this.elements.push(element);
+        super.addChild(element);
+    }
+
+    public removeElement(element: Element) {
+        this.elements = this.elements.filter(e => e !== element);
+        super.removeChild(element);
     }
 
     public onMouseDown(handler) { this.mousedownHandler = handler; }
@@ -141,5 +157,21 @@ class Element extends PIXI.Container {
         if(this.inDrag) {
             this.emit("dragover", event)
         }
+    }
+
+    private repositionSelf() {
+        if(this.parent) {
+        }
+    }
+
+    public repositionChildren() {
+        this.repositionSelf();
+        for(let i = 0; i < this.elements.length; i++) {
+            const elements = this.elements[i] as Element;
+            elements.repositionChildren();
+        }
+        this.children.forEach(c => {
+            c.repositionChildren();
+        });
     }
 }
