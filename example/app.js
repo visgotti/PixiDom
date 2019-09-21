@@ -18,7 +18,7 @@ const stage = new PIXI.Container();
 
 PIXI.loader.add('./fonts/small.fnt');
 PIXI.loader.load((loader, resources) => {
-   const defaultTextInput = new PixiText.TextField('small');
+   const defaultTextInput = new PIXI_DOM.TextField('small');
 
     stage.addChild(defaultTextInput);
 
@@ -42,7 +42,7 @@ PIXI.loader.load((loader, resources) => {
         defaultTextInput.clear();
     });
 
-    const styledTextInput = new PixiText.TextField('small', {
+    const styledTextInput = new PIXI_DOM.TextField('small', {
         width: '60px',
         height: '20px',
         cursorHeight: '18px',

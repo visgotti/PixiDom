@@ -6,6 +6,7 @@ export default function <TBase extends Constructor>(Base: TBase){
         public copiedText: string = '';
         public textStates: Array<string> = [];
         public currentStateIndex: number = -1;
+        private stateInterval: any;
 
         constructor(...args: any[]) {
             super(...args);
@@ -19,6 +20,8 @@ export default function <TBase extends Constructor>(Base: TBase){
 
             super.on('focus', this.registerHandlers);
             super.on('blur', this.unregisterHandlers);
+
+            this.stateInterval = null;
         }
 
         public changeStateIndex(change) {
@@ -35,7 +38,6 @@ export default function <TBase extends Constructor>(Base: TBase){
             document.addEventListener("paste", this.onPaste);
             document.addEventListener("keypress", this.onKeyPress);
             document.addEventListener("keydown", this.onKeyDown);
-
         }
         public unregisterHandlers() {
             document.removeEventListener("copy", this.onCopy);
@@ -76,8 +78,6 @@ export default function <TBase extends Constructor>(Base: TBase){
             }
         };
 
-        public onUndo(){};
-        public onRedo(){};
         public onBackspace(){};
         public onDelete(){};
 
@@ -106,6 +106,7 @@ export default function <TBase extends Constructor>(Base: TBase){
                     const indexChange = event.shiftKey ? 1 : -1; // if shift is pressed we want to do redo behavior
                     this.changeStateIndex(indexChange);
                 } else if(code == 65) { // a
+                    event.preventDefault();
                     super.selectAll();
                 }
             }
@@ -113,6 +114,9 @@ export default function <TBase extends Constructor>(Base: TBase){
 
         public onKeyPress(event) {
             const code = event.keyCode ? event.keyCode : event.which;
+            if(this.submitKeyCodes.includes(code) || this.ignoreKeys.includes(code)) {
+                return;
+            }
             const char = String.fromCharCode(code);
             if(char) {
                 if(!event.ctrlKey) {

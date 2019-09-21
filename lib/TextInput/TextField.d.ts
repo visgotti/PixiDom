@@ -1,8 +1,5 @@
 /// <reference types="pixi.js" />
-declare type ValidMeasurement = {
-    value: number;
-    type: string;
-};
+import { ValidMeasurement } from "../types";
 export declare type StyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
@@ -57,12 +54,13 @@ declare class TextField extends PIXI.Container {
     private dragIndexEnd;
     private inDrag;
     submitKeyCodes: Array<number>;
+    ignoreKeys: Array<number>;
     maxCharacterLength: number;
     private onFocusHandler;
     private onBlurHandler;
     private onChangeHandler;
     private onSubmitHandler;
-    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?: any);
+    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?: any, ignoreKeys?: any);
     updateStyle(styleOptions: StyleOptionsParams): void;
     private redraw;
     private redrawCursor;
@@ -111,14 +109,13 @@ declare const _default: {
         copiedText: string;
         textStates: string[];
         currentStateIndex: number;
+        stateInterval: any;
         changeStateIndex(change: any): void;
         registerHandlers(): void;
         unregisterHandlers(): void;
         onPaste(event: any): void;
         onCopy(event: any): void;
         onCut(event: any): void;
-        onUndo(): void;
-        onRedo(): void;
         onBackspace(): void;
         onDelete(): void;
         onKeyDown(event: any): void;

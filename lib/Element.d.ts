@@ -1,0 +1,47 @@
+/// <reference types="pixi.js" />
+declare class PixiElement extends PIXI.Container {
+    private elements;
+    private inDrag;
+    private mouseIsDown;
+    private dragPosition;
+    private _mousedownHandler;
+    private _mousemoveHandler;
+    private _mouseupHandler;
+    private _mouseoverHandler;
+    private _mouseleaveHandler;
+    private _doubleClickHandler;
+    private _dragendHandler;
+    private _dragstartHandler;
+    private doubleClickTimeout;
+    private _addChild;
+    constructor();
+    mousedownHandler: any;
+    mouseupHandler: any;
+    mouseoverHandler: any;
+    mousemoveHandler: any;
+    mouseleaveHandler: any;
+    doubleclickHandler: any;
+    dragstartHandler: any;
+    dragendHandler: any;
+    private _setEventNameHandler;
+    addElement(element: Element): void;
+    removeElement(element: Element): void;
+    onMouseDown(handler: any): void;
+    onMouseUp(handler: any): void;
+    onMouseOver(handler: any): void;
+    onMouseLeave(handler: any): void;
+    onMouseMove(handler: any): void;
+    onDragStart(handler: any): void;
+    onDragEnd(handler: any): void;
+    onDoubleClick(handler: any): void;
+    private __doubleclick;
+    private __mousedown;
+    private __dragstart;
+    private __mousemove;
+    private __mouseover;
+    private __mouseleave;
+    private __dragend;
+    private __mouseup;
+    private repositionSelf;
+    repositionChildren(): void;
+}

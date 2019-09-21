@@ -8,11 +8,14 @@ Starting a library with pixi interface elements
 ```js
 PIXI.loader.add('./fonts/small.fnt');
 PIXI.loader.load(() => {
-   const textInput = new PixiText.TextField('small');
+   const textInput = new PIXI_DOM.TextField('small');
    
    // define which keys can fire off the "onSubmit" event, by default its just 13 (enter key)
    textInput.submitKeyCodes = ([13]);
    
+    // can define keys to ignore, this would ignore all tab presses as input
+    textInput.ignoreKeys = ([9]) 
+
    // manually focus
    textInput.focus();
    // manually blur

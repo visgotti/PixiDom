@@ -1,11 +1,6 @@
 import { parseLengthMeasurements } from "../utils";
 import KeyboardHandlerMixin from "../mixins/KeyboardHandlers";
-
-type ValidMeasurement = {
-    value: number,
-    type: string, // percent or pixel
-}
-
+import { ValidMeasurement } from "../types";
 export type StyleOptions = {
     width?: ValidMeasurement,
     height?: ValidMeasurement,
@@ -90,14 +85,18 @@ class TextField extends PIXI.Container {
     private inDrag: boolean = false;
 
     public submitKeyCodes: Array<number> = [13];
+    public ignoreKeys: Array<number> = [];
     public maxCharacterLength: number = null;
 
     private onFocusHandler: Function = () => {};
     private onBlurHandler: Function = () => {};
     private onChangeHandler: Function = () => {};
     private onSubmitHandler: Function = () => {};
-    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?) {
+    constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?, ignoreKeys?) {
         super();
+        if(ignoreKeys) {
+            this.ignoreKeys = ignoreKeys;
+        }
         const _defaultStyleOptions = { ...defaultStyleOptions() };
         if(styleOptions) {
             for(let key in styleOptions) {
@@ -110,7 +109,7 @@ class TextField extends PIXI.Container {
         this.buttonMode = true;
         this.interactive = true;
 
-        this.textSprite = new PIXI.extras.BitmapText('test', { font, align: "left" });
+        this.textSprite = new PIXI.extras.BitmapText('', { font, align: "left" });
 
         this.cursor = "text";
 

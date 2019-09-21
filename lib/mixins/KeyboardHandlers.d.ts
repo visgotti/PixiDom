@@ -5,14 +5,13 @@ export default function <TBase extends Constructor>(Base: TBase): {
         copiedText: string;
         textStates: string[];
         currentStateIndex: number;
+        stateInterval: any;
         changeStateIndex(change: any): void;
         registerHandlers(): void;
         unregisterHandlers(): void;
         onPaste(event: any): void;
         onCopy(event: any): void;
         onCut(event: any): void;
-        onUndo(): void;
-        onRedo(): void;
         onBackspace(): void;
         onDelete(): void;
         onKeyDown(event: any): void;
