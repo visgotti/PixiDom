@@ -465,7 +465,7 @@ class TextField extends PIXI.Container {
         }
     }
 
-    private selectAll() {
+    public selectAll() {
         this.setSelectedRange(0, this.text.length);
     }
     private setSelectedRange(start, end) {

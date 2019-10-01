@@ -80,7 +80,7 @@ declare class TextField extends PIXI.Container {
     private replaceSelectedWith;
     private getSelectedRangeIndexes;
     private getSelectedRange;
-    private selectAll;
+    selectAll(): void;
     private setSelectedRange;
     private charFromPosition;
     private removeLeftOfCursor;

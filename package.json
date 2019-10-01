@@ -1,6 +1,6 @@
 {
   "name": "pixidom.js",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Simple to use lib that immitates dom elements in pixi.js",
   "scripts": {
     "build": "webpack --config ./webpack.config.js",
@@ -29,5 +29,8 @@
   "bugs": {
     "url": "https://github.com/visgotti/PixiDom/issues"
   },
-  "homepage": "https://github.com/visgotti/PixiDom#readme"
+  "homepage": "https://github.com/visgotti/PixiDom#readme",
+  "dependencies": {
+    "gotti-color-tween": "^0.1.2"
+  }
 }

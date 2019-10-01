@@ -16,7 +16,7 @@ renderer.view.style.height = '500px';
 
 const stage = new PIXI.Container();
 
-PIXI.loader.add('./fonts/small.fnt');
+PIXI.loader.add('../fonts/small.fnt');
 PIXI.loader.load((loader, resources) => {
    const defaultTextInput = new PIXI_DOM.TextField('small');
 

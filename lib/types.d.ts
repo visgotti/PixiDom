@@ -1,3 +1,4 @@
+export declare const GLOBAL_PIXI_DTA_PROPERTY_KEY = "__pixi-dom-dynamic-texture-atlas";
 export declare type ValidMeasurement = {
     value: number;
     type: string;
@@ -57,4 +58,52 @@ export declare type InputStyleOptionsParams = {
     borderOpacity?: number;
     xPadding?: number;
     yPadding?: number;
+};
+export declare type LabelOptions = {
+    onLabel: string;
+    onColor: number;
+    offLabel: string;
+    offColor: number;
+    fontName: string;
+};
+export declare enum AnimationType {
+    LINEAR = "linear",
+    QUADRATIC = "quadtratic",
+    CUBIC = "cubic",
+    QUARTIC = "quartic",
+    QUINTIC = "quintic",
+    SINUSOIDAL = "sinusoidal",
+    EXPONENTIAL = "exponential",
+    CIRCULAR = "circular",
+    ELASTIC = "elastic",
+    BACK = "back"
+}
+export declare type AnimationOptions = {
+    type: AnimationType;
+    duration: number;
+    exclude?: Array<string>;
+};
+export declare enum ToggleAnimationExclusions {
+    background = "background",
+    circle_color = "circle_color",
+    circle_position = "circle_position",
+    label = "label"
+}
+export declare type OutlineOptions = {
+    width: number;
+    color: number;
+};
+export declare type ToggleOptions = {
+    width: number;
+    height: number;
+    borderRadius: number;
+    onCircleColor: number;
+    offCircleColor: number;
+    onBackgroundColor: number;
+    offBackgroundColor: number;
+    onToggleColor: number;
+    offToggleColor: number;
+    backgroundOutline?: OutlineOptions;
+    labelOptions?: LabelOptions;
+    animationOptions?: AnimationOptions;
 };
