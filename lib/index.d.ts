@@ -1,3 +1,6 @@
-import TextField from './TextInput/TextField';
+import TextField from './Components/TextInput/TextField';
 export { TextField };
-export { Toggle } from './Components/Toggle';
+import { PixiElement } from "./Element";
+export { PixiElement };
+import { Toggle } from './Components/Toggle';
+export { Toggle };

@@ -2,16 +2,16 @@ const canvas = document.getElementById('canvas');
 
 const renderer = PIXI.autoDetectRenderer({
     width: 500,
-    height: 500,
+    height: 600,
     antialias: false,
     roundPixels: true,
     resolution:  1,
     view: canvas,
 });
 
-renderer.view.width = 500;
-renderer.view.height = 500;
-renderer.view.style.width = '500px';
+renderer.view.width = 600;
+renderer.view.height = 600;
+renderer.view.style.width = '600px';
 renderer.view.style.height = '500';
 
 const stage = new PIXI.Container();
@@ -28,7 +28,7 @@ PIXI.loader.load((loader, resources) => {
     const toggle = new PIXI_DOM.Toggle({
         width: 60,
         height: 30,
-        borderRadius: 40,
+        borderRadius: 50,
         onCircleColor: 0x000000,
         offCircleColor: 0xffffff,
         onBackgroundColor: 0x32CD32, //lime green,
@@ -93,7 +93,7 @@ PIXI.loader.load((loader, resources) => {
     stage.addChild(label3);
     label3.x = 50;
     label3.y = 280;
-    const toggleManualController = new PIXI_DOM.Toggle({
+    const toggleManualController = new PIXI.Toggle({
         width: 60,
         height: 30,
         borderRadius: 50,
@@ -135,7 +135,7 @@ PIXI.loader.load((loader, resources) => {
     stage.addChild(label4);
     label4.x = 50;
     label4.y = 380;
-    const animatedToggle = new PIXI_DOM.Toggle({
+    const animatedToggle = new PIXI.Toggle({
         width: 60,
         height: 30,
         borderRadius: 50,
@@ -172,6 +172,49 @@ PIXI.loader.load((loader, resources) => {
         }
     });
 
+
+    // ============================= EXCLUDE TRANSITION EFFECTS TOGGLE DEMONSTRATION =============================
+    const label5 = new PIXI.extras.BitmapText("Excludes animation property 'circle_position'", { font: "medium", align: "left" });
+    stage.addChild(label5);
+    label5.x = 50;
+    label5.y = 480;
+    const excludedAnimatedToggle = new PIXI.Toggle({
+        width: 60,
+        height: 30,
+        borderRadius: 50,
+        onCircleColor: 0x000000,
+        offCircleColor: 0xffffff,
+        onBackgroundColor: 0x32CD32, //lime green,
+        offBackgroundColor: 0x808080, // gray,
+        backgroundOutline: {
+            width: 2,
+            color: 0xffffff,
+        },
+        animationOptions: {
+            type: 'quartic',
+            duration: 200,
+            exclude: ['circle_position']
+        },
+        labelOptions: {
+            onLabel: "on",
+            offLabel: "off",
+            onColor: 0x089000, //dark green
+            offColor: 0x404040, // dark gray
+            fontName: "medium"
+        }
+    });
+
+    excludedAnimatedToggle.x = 50;
+    excludedAnimatedToggle.y = 500;
+    stage.addChild(excludedAnimatedToggle);
+
+    excludedAnimatedToggle.onToggle((t) => {
+        if(t) {
+            console.log('ANIMATED LABEL TOGGLE ON')
+        } else {
+            console.log('ANIMATED LABEL TOGGLE OFF')
+        }
+    });
 });
 
 setInterval(() => {

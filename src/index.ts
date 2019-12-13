@@ -1,4 +1,16 @@
-import TextField from './TextInput/TextField';
+import TextField from './Components/TextInput/TextField';
 export { TextField };
+import { PixiElement } from "./Element";
+export { PixiElement };
 
-export { Toggle } from './Components/Toggle';
+import { Toggle } from './Components/Toggle';
+if(PIXI !== undefined) {
+    if(PIXI['Toggle']) {
+        throw new Error('PIXI.Toggle was already defined')
+    }
+    PIXI['Toggle'] = Toggle;
+    PIXI['TextField'] = TextField;
+    PIXI['Element'] = PixiElement;
+}
+
+export { Toggle };

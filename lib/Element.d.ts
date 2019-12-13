@@ -1,47 +1,74 @@
 /// <reference types="pixi.js" />
-declare class PixiElement extends PIXI.Container {
+export declare class PixiElement extends PIXI.Container {
     private elements;
-    private inDrag;
-    private mouseIsDown;
     private dragPosition;
-    private _mousedownHandler;
-    private _mousemoveHandler;
-    private _mouseupHandler;
-    private _mouseoverHandler;
-    private _mouseleaveHandler;
-    private _doubleClickHandler;
+    private inDrag;
+    private pointerIsDown;
+    private _pointerdownHandler;
+    private _pointermoveHandler;
+    private _pointerupHandler;
+    private _pointerupoutsideHandler;
+    private _pointeroverHandler;
+    private _pointeroutHandler;
+    private _doubleclickHandler;
+    private _dragmoveHandler;
     private _dragendHandler;
     private _dragstartHandler;
     private doubleClickTimeout;
     private _addChild;
+    private completedTriggerTimeout;
+    private holdDragTriggerTime;
+    private holdDragTriggerTimeout;
+    private helddownCountHandlers;
+    private helddownTimeouts;
+    private mouseDownInElement;
     constructor();
-    mousedownHandler: any;
-    mouseupHandler: any;
-    mouseoverHandler: any;
-    mousemoveHandler: any;
-    mouseleaveHandler: any;
+    pointerdownHandler: any;
+    pointerupHandler: any;
+    pointerupoutsideHandler: any;
+    pointeroverHandler: any;
+    pointermoveHandler: any;
+    pointeroutHandler: any;
     doubleclickHandler: any;
     dragstartHandler: any;
     dragendHandler: any;
+    dragmoveHandler: any;
+    private _setHeldDownHandler;
     private _setEventNameHandler;
+    centerX(): void;
+    centerY(): void;
+    center(): void;
     addElement(element: Element): void;
     removeElement(element: Element): void;
     onMouseDown(handler: any): void;
     onMouseUp(handler: any): void;
+    onMouseUpOutside(handler: any): void;
     onMouseOver(handler: any): void;
-    onMouseLeave(handler: any): void;
+    onMouseOut(handler: any): void;
     onMouseMove(handler: any): void;
-    onDragStart(handler: any): void;
+    onHeldDown(handler: any, timeout: number): void;
+    /**
+     *
+     * @param handler
+     * @param hold - time in milliseconds needed to be held before triggering drag
+     */
+    onDragStart(handler: any, hold?: number): void;
     onDragEnd(handler: any): void;
+    onDragMove(handler: any): void;
     onDoubleClick(handler: any): void;
     private __doubleclick;
-    private __mousedown;
+    private clearHelddownTimeouts;
+    private registerDefaultIfNeeded;
+    private __pointerdown;
     private __dragstart;
-    private __mousemove;
-    private __mouseover;
-    private __mouseleave;
+    private __dragmove;
     private __dragend;
-    private __mouseup;
+    private __pointermove;
+    private __pointerover;
+    private __pointerout;
+    private __pointerupoutside;
+    private __pointerup;
+    private clearDragTimeouts;
     private repositionSelf;
     repositionChildren(): void;
 }
