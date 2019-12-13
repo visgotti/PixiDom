@@ -19,7 +19,7 @@ export class PixiElement extends PIXI.Container {
     private _addChild: Function;
 
     private completedTriggerTimeout: boolean = null;
-    private holdDragTriggerTime: number = 200;
+    private holdDragTriggerTime: number = 50;
     private holdDragTriggerTimeout: any = null;
 
     private helddownCountHandlers: any = {};
@@ -126,6 +126,7 @@ export class PixiElement extends PIXI.Container {
     }
     public onDragMove(handler) {
         if(!this._dragstartHandler) {this.onDragStart((event) => {}, this.holdDragTriggerTime)}
+        if(!this._dragendHandler) { this.onDragEnd((event) => {})}
         this.registerDefaultIfNeeded('pointermove');
         this.dragmoveHandler = handler;
     }

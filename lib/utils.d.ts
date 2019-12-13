@@ -5,4 +5,5 @@ declare type ParsedMeasurement = {
     type?: string;
 };
 export declare const parseLengthMeasurements: (measurement: any) => ParsedMeasurement;
+export declare function clamp(num: any, min: any, max: any): any;
 export {};

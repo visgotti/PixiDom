@@ -43,5 +43,8 @@ export const parseLengthMeasurements = function(measurement) : ParsedMeasurement
     } catch(err) {
         return { valid: false, error: err.message }
     }
+}
 
+export function clamp(num, min, max) {
+    return num <= min ? min : num >= max ? max : num;
 }

@@ -31,8 +31,9 @@ element.center();
 const events = [];
 // second param is time needed for hold
 element.onDragStart(event => {
+    console.log('drag start event', event);
     events.push('drag start');
-},  3000 /*defaults to 200*/ );
+}, 50   /*defaults to 50*/ );
 
 element.onHeldDown(() => {
     console.log('held down for a second')
@@ -47,7 +48,6 @@ element.onDragEnd(event => {
 });
 
 element.onDragMove(event => {
-    console.log('the event on drag move was', event);
     element.x = event.data.global.x;
     element.y = event.data.global.y;
     events.push('drag move')

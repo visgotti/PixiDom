@@ -3,6 +3,8 @@ export { TextField };
 import { PixiElement } from "./Element";
 export { PixiElement };
 
+import { ScrollBar } from "./Components/ScrollList/ScrollBar";
+export { ScrollBar }
 import { Toggle } from './Components/Toggle';
 if(PIXI !== undefined) {
     if(PIXI['Toggle']) {
@@ -11,6 +13,7 @@ if(PIXI !== undefined) {
     PIXI['Toggle'] = Toggle;
     PIXI['TextField'] = TextField;
     PIXI['Element'] = PixiElement;
+    PIXI['ScrollBar'] = ScrollBar;
 }
 
 export { Toggle };
