@@ -1,4 +1,5 @@
 import color = Mocha.reporters.Base.color;
+import { string2hex } from "../utils";
 
 const ColorTween = require('gotti-color-tween/dist/color-tween.js');
 const circlePadding = 2;
@@ -160,7 +161,7 @@ export class Toggle extends PIXI.Container {
                 const {width, color} = this.options.backgroundOutline;
                 this.backgroundGraphic.lineStyle(width, color);
             }
-            this.backgroundGraphic.beginFill(this.string2hex(colors[this.backgroundColorsArrayIndex].hex()));
+            this.backgroundGraphic.beginFill(string2hex(colors[this.backgroundColorsArrayIndex].hex()));
             this.backgroundGraphic.drawRoundedRect(0, 0, this.options.width, this.options.height, this.computedBorderRadius);
             this.backgroundGraphic.endFill();
         }
@@ -175,7 +176,7 @@ export class Toggle extends PIXI.Container {
 
         if (this.circleColorsArrayIndex !== null) {
             this.circleGraphic.clear();
-            this.circleGraphic.beginFill(this.string2hex(colors[this.circleColorsArrayIndex].hex()));
+            this.circleGraphic.beginFill(string2hex(colors[this.circleColorsArrayIndex].hex()));
             this.circleGraphic.drawCircle(this.circleRadius, this.circleRadius, this.circleRadius);
             this.circleGraphic.endFill();
         };
@@ -250,13 +251,5 @@ export class Toggle extends PIXI.Container {
             this.onText.visible = false;
             this.offText.visible = true;
         }
-    }
-
-    private string2hex(string) {
-        if (typeof string === 'string' && string[0] === '#')
-        {
-            string = string.substr(1);
-        }
-        return parseInt(string, 16);
     }
 }

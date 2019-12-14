@@ -13,6 +13,9 @@ export class PixiElement extends PIXI.Container {
     private _dragmoveHandler: Function = null;
     private _dragendHandler: Function = null;
     private _dragstartHandler: Function = null;
+    private _swipeupHandler: Function = null;
+    private _swipedownHandler: Function = null;
+    private _swipeHandler: Function = null;
 
     private doubleClickTimeout: any = null;
 
@@ -25,6 +28,13 @@ export class PixiElement extends PIXI.Container {
     private helddownCountHandlers: any = {};
     private helddownTimeouts: Array<any> = [];
     private mouseDownInElement: boolean = false;
+
+    private swipeStartY: number;
+    private swipeStartTs: number;
+    private swipeEndY: number;
+
+    public maxSwipeTimeout: number = 600;
+    public minSwipeDistance: number = 10;
 
     constructor() {
         super();
@@ -41,7 +51,7 @@ export class PixiElement extends PIXI.Container {
     set doubleclickHandler(handler) { this._setEventNameHandler("doubleclick", handler); }
     set dragstartHandler(handler) {this._setEventNameHandler("dragstart", handler);}
     set dragendHandler(handler) { this._setEventNameHandler("dragend", handler); }
-    set dragmoveHandler(handler) {this._setEventNameHandler("dragmove", handler) }
+    set dragmoveHandler(handler) {this._setEventNameHandler("dragmove", handler); }
 
     private _setHeldDownHandler(handler, timeout: number) {
         if(this.helddownCountHandlers[timeout]) {
@@ -52,7 +62,6 @@ export class PixiElement extends PIXI.Container {
             this.helddownCountHandlers[timeout](event);
         })
     }
-
 
     private _setEventNameHandler(eventName, handler) {
         const currentHandler =  this[`_${eventName}Handler`];
@@ -104,6 +113,7 @@ export class PixiElement extends PIXI.Container {
     public onHeldDown(handler, timeout: number) {
         this._setHeldDownHandler(handler, timeout)
     }
+
     /**
      *
      * @param handler
@@ -137,6 +147,26 @@ export class PixiElement extends PIXI.Container {
         this.doubleclickHandler = handler;
     };
 
+    public onSwipe(handler) {
+        this.registerDefaultIfNeeded('pointerdown');
+        this.registerDefaultIfNeeded('pointerup');
+        this.registerDefaultIfNeeded('pointerupoutside');
+        this._swipeHandler = handler;
+    }
+
+    public onSwipeUp(handler) {
+        this.registerDefaultIfNeeded('pointerdown');
+        this.registerDefaultIfNeeded('pointerup');
+        this.registerDefaultIfNeeded('pointerupoutside');
+        this._swipeupHandler = handler;
+    }
+    public onSwipeDown(handler) {
+        this.registerDefaultIfNeeded('pointerdown');
+        this.registerDefaultIfNeeded('pointerup');
+        this.registerDefaultIfNeeded('pointerupoutside');
+        this._swipedownHandler = handler;
+    }
+
     private __doubleclick(event) {
         clearTimeout(this.doubleClickTimeout);
         this.doubleClickTimeout = null;
@@ -166,6 +196,9 @@ export class PixiElement extends PIXI.Container {
 
         this.pointerIsDown = true;
         this._pointerdownHandler(event);
+
+        this.swipeStartTs = Date.now();
+        this.swipeStartY = event.data.global.y;
 
         if(this._dragstartHandler && !this.inDrag) {
             this.holdDragTriggerTimeout = setTimeout(() => {
@@ -210,19 +243,34 @@ export class PixiElement extends PIXI.Container {
         this.clearDragTimeouts();
         this._pointeroutHandler(event);
     }
+
+    private handleSwipeFinish(event) {
+        if(this._swipeupHandler || this._swipedownHandler || this._swipeHandler) {
+            const yDiff = this.swipeStartY - event.data.global.y;
+            const timeDiff = Math.max(Date.now() - this.swipeStartTs, 1);
+            if(timeDiff < this.maxSwipeTimeout && Math.abs(yDiff) > this.minSwipeDistance) {
+                const handler = yDiff > 0 ? this._swipeupHandler : this._swipedownHandler;
+                const power = yDiff / (timeDiff / 10);
+                handler && handler(power);
+                this._swipeHandler && this._swipeHandler(power);
+            }
+        }
+    }
+
     private __pointerupoutside(event) {
         this.clearHelddownTimeouts();
         this.clearDragTimeouts();
+        this.handleSwipeFinish(event);
         this.pointerIsDown = false;
         this._pointerupoutsideHandler(event);
         if(this.inDrag) {
             this.emit("dragend", event);
         }
     }
-
     private __pointerup(event) {
         this.clearHelddownTimeouts();
         this.clearDragTimeouts();
+        this.handleSwipeFinish(event);
         this.pointerIsDown = false;
         this._pointerupHandler(event);
         if(this.inDrag) {

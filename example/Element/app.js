@@ -29,6 +29,15 @@ stage.addChild(element);
 element.center();
 
 const events = [];
+
+element.onSwipeUp(power => {
+    events.push('swipe up')
+});
+
+element.onSwipeDown(power => {
+    events.push('swipe down')
+});
+
 // second param is time needed for hold
 element.onDragStart(event => {
     console.log('drag start event', event);
@@ -48,8 +57,6 @@ element.onDragEnd(event => {
 });
 
 element.onDragMove(event => {
-    element.x = event.data.global.x;
-    element.y = event.data.global.y;
     events.push('drag move')
 });
 element.onMouseDown(event => {

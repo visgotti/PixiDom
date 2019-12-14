@@ -11,6 +11,13 @@ type ParsedMeasurement = {
 
 export const parseLengthMeasurements = function(measurement) : ParsedMeasurement {
     let value: number;
+    if(!isNaN(measurement) && measurement != null) {
+        return {
+            valid: true,
+            type: 'pixel',
+            value: measurement
+        }
+    }
     try {
         const last2 = measurement.toString().slice(-2);
         if(last2.charAt(1) === '%') {
@@ -47,4 +54,12 @@ export const parseLengthMeasurements = function(measurement) : ParsedMeasurement
 
 export function clamp(num, min, max) {
     return num <= min ? min : num >= max ? max : num;
+}
+
+export function string2hex(string) {
+    if (typeof string === 'string' && string[0] === '#')
+    {
+        string = string.substr(1);
+    }
+    return parseInt(string, 16);
 }

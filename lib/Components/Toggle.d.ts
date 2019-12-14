@@ -36,5 +36,4 @@ export declare class Toggle extends PIXI.Container {
     private staticToggleUpdate;
     private _showOnText;
     private _showOffText;
-    private string2hex;
 }

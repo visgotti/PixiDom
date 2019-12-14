@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/visgotti/PixiDom#readme",
   "dependencies": {
-    "gotti-color-tween": "^0.1.2"
+    "gotti-color-tween": "^0.1.2",
+    "tween-functions": "^1.2.0"
   }
 }

@@ -19,27 +19,37 @@ export declare type ScrollStyleOptions = {
     scrollBarWidth: number;
     scrollBarSide: "left" | "right";
 };
-export default class ScrollList extends PIXI.Container {
+export declare class ScrollList extends PIXI.Container {
     private scrollStyleOptions;
     private scrollItemsById;
     private options;
     private po;
     private scrollBar;
     private scrollbarScroll;
+    private scrollRect;
+    private scrollDuration;
     private scrollMask;
     private _currentScroll;
     private lastScroll;
     private __width;
     private __height;
+    private scrollCurrentDur;
+    private animationFrame;
+    private nextItemY;
+    private scrollToDest;
     private listContainer;
     private listRect;
+    private scrollLength;
     constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>);
     private redraw;
+    private repositionOptions;
     private adjustOptions;
+    private animateScroll;
+    private applyDrag;
+    private applySwipe;
     currentScroll: any;
-    scrollUp(pixels: number): void;
-    scrollDown(pixels: number): void;
-    addScrollItem(options: ScrollItemOptions): number;
+    addScrollItems(containers: Array<PIXI.Container>): void;
+    addScrollItem(container: PIXI.Container): void;
     removeScrollItem(indexOrContainer: any): boolean;
     scroll(difference: any, func?: any): void;
 }

@@ -14,6 +14,9 @@ export declare class PixiElement extends PIXI.Container {
     private _dragmoveHandler;
     private _dragendHandler;
     private _dragstartHandler;
+    private _swipeupHandler;
+    private _swipedownHandler;
+    private _swipeHandler;
     private doubleClickTimeout;
     private _addChild;
     private completedTriggerTimeout;
@@ -22,6 +25,11 @@ export declare class PixiElement extends PIXI.Container {
     private helddownCountHandlers;
     private helddownTimeouts;
     private mouseDownInElement;
+    private swipeStartY;
+    private swipeStartTs;
+    private swipeEndY;
+    maxSwipeTimeout: number;
+    minSwipeDistance: number;
     constructor();
     pointerdownHandler: any;
     pointerupHandler: any;
@@ -56,6 +64,9 @@ export declare class PixiElement extends PIXI.Container {
     onDragEnd(handler: any): void;
     onDragMove(handler: any): void;
     onDoubleClick(handler: any): void;
+    onSwipe(handler: any): void;
+    onSwipeUp(handler: any): void;
+    onSwipeDown(handler: any): void;
     private __doubleclick;
     private clearHelddownTimeouts;
     private registerDefaultIfNeeded;
@@ -66,6 +77,7 @@ export declare class PixiElement extends PIXI.Container {
     private __pointermove;
     private __pointerover;
     private __pointerout;
+    private handleSwipeFinish;
     private __pointerupoutside;
     private __pointerup;
     private clearDragTimeouts;
