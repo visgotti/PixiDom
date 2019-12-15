@@ -2,7 +2,7 @@
 export declare class PixiElement extends PIXI.Container {
     private elements;
     private dragPosition;
-    private inDrag;
+    inDrag: Boolean;
     private pointerIsDown;
     private _pointerdownHandler;
     private _pointermoveHandler;
@@ -10,6 +10,7 @@ export declare class PixiElement extends PIXI.Container {
     private _pointerupoutsideHandler;
     private _pointeroverHandler;
     private _pointeroutHandler;
+    private _pointertapHandler;
     private _doubleclickHandler;
     private _dragmoveHandler;
     private _dragendHandler;
@@ -24,12 +25,21 @@ export declare class PixiElement extends PIXI.Container {
     private holdDragTriggerTimeout;
     private helddownCountHandlers;
     private helddownTimeouts;
-    private mouseDownInElement;
+    private ifDragEndEmitSwipeDistance;
     private swipeStartY;
     private swipeStartTs;
     private swipeEndY;
+    private startDragY;
+    private lastDragCheckTs;
+    private curDragSwiperCheckIterationDuration;
+    private curDragSwipePowerIterationQueue;
+    private lastDragDistance;
+    private lastDragY;
+    private dragDistanceY;
     maxSwipeTimeout: number;
     minSwipeDistance: number;
+    private hasSwipeHandler;
+    private missedDiffs;
     constructor();
     pointerdownHandler: any;
     pointerupHandler: any;
@@ -37,6 +47,7 @@ export declare class PixiElement extends PIXI.Container {
     pointeroverHandler: any;
     pointermoveHandler: any;
     pointeroutHandler: any;
+    pointertapHandler: any;
     doubleclickHandler: any;
     dragstartHandler: any;
     dragendHandler: any;
@@ -54,6 +65,7 @@ export declare class PixiElement extends PIXI.Container {
     onMouseOver(handler: any): void;
     onMouseOut(handler: any): void;
     onMouseMove(handler: any): void;
+    onMouseTap(handler: any): void;
     onHeldDown(handler: any, timeout: number): void;
     /**
      *
@@ -71,8 +83,10 @@ export declare class PixiElement extends PIXI.Container {
     private clearHelddownTimeouts;
     private registerDefaultIfNeeded;
     private __pointerdown;
+    private __pointertap;
     private __dragstart;
     private __dragmove;
+    private resetDragSwipeVars;
     private __dragend;
     private __pointermove;
     private __pointerover;

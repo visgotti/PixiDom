@@ -34,6 +34,9 @@ function getRandomColor() {
     return PIXI.utils.string2hex(color);
 }
 
+function redrawWithBorder(el) {
+}
+
 function createOptions(n, borderWidth) {
     const options = [];
     if(!borderWidth && borderWidth != 0) {
@@ -41,18 +44,54 @@ function createOptions(n, borderWidth) {
     }
     for(let i = 0; i < n; i++) {
         const g = new PIXI.Graphics();
-        g.beginFill(getRandomColor(), 1);
-        g.drawRect(0, 0, scrollListWidth, 50);
+        const randomColor = getRandomColor();
         const el = new PIXI.Element();
-        g.endFill();
         el.addChild(g);
-        el.onMouseUp(() => {
-         //   console.log('clicked option:', i);
+        let isOver = false;
+        let isDown = false;
+        function drawNormal() {
+            isOver = false;
+            isDown = false;
+            g.clear();
+            g.beginFill(randomColor, 1);
+            g.drawRect(0, 0, scrollListWidth, 50);
+            g.endFill();
+        }
+        function drawHover() {
+            isOver = true;
+            if(isDown) return;
+            g.clear();
+            g.lineStyle(5, 0xfffffff);
+            g.beginFill(randomColor, 1);
+            g.drawRect(5, 5, scrollListWidth - 10, 40);
+            g.endFill();
+        }
+        function drawDown() {
+            isDown = true;
+            g.clear();
+            g.lineStyle(10, 0xfffffff);
+            g.beginFill(randomColor, 1);
+            g.drawRect(10, 10, scrollListWidth - 20, 30);
+            g.endFill();
+        }
+        function drawUp() {
+            isDown = false;
+            isOver ? drawHover() : drawNormal();
+        }
+
+        drawNormal();
+        el.onMouseDown(drawDown);
+        el.onMouseUp(drawUp);
+        el.onMouseUpOutside(drawUp);
+        el.onMouseOver(drawHover);
+        el.onMouseOut(drawNormal);
+
+        el.on('hide', () => {
+            el.visible = false;
         });
-        el.onMouseOver(() => {
+        el.on('show', () => {
+            el.visible = true;
         });
-        el.onMouseOut(() => {
-        })
         options.push(el);
     }
     return options;

@@ -19,6 +19,10 @@ export declare type ScrollStyleOptions = {
     scrollBarWidth: number;
     scrollBarSide: "left" | "right";
 };
+export declare type ScrolllPerformanceOptions = {
+    visibilityBuffer: number;
+    adjustVisibilityTime: number;
+};
 export declare class ScrollList extends PIXI.Container {
     private scrollStyleOptions;
     private scrollItemsById;
@@ -33,16 +37,31 @@ export declare class ScrollList extends PIXI.Container {
     private lastScroll;
     private __width;
     private __height;
+    private pointerdownStart;
+    private startingVisibleChildIndex;
+    private endingVisibleChildIndex;
     private scrollCurrentDur;
+    private currentAdjustVisibilityDelta;
     private animationFrame;
     private nextItemY;
     private scrollToDest;
     private listContainer;
     private listRect;
     private scrollLength;
-    constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>);
+    private adjustedIndex;
+    private maxHeight;
+    private lastOverOption;
+    private lastDownOption;
+    private tweenFunc;
+    readonly performanceOptions: ScrolllPerformanceOptions;
+    constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>, scrollPerformanceOptions?: ScrolllPerformanceOptions);
+    private findVisible;
+    private _containsPoint;
+    private findOptionAtPoint;
+    private relayEvent;
     private redraw;
     private repositionOptions;
+    private adjustVisibility;
     private adjustOptions;
     private animateScroll;
     private applyDrag;
@@ -51,5 +70,5 @@ export declare class ScrollList extends PIXI.Container {
     addScrollItems(containers: Array<PIXI.Container>): void;
     addScrollItem(container: PIXI.Container): void;
     removeScrollItem(indexOrContainer: any): boolean;
-    scroll(difference: any, func?: any): void;
+    private initializeEventPropogation;
 }
