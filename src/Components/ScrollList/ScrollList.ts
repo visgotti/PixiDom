@@ -183,16 +183,6 @@ export class ScrollList extends PIXI.Container {
         return null;
     }
 
-    private relayEvent(eventName, event) {
-        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
-            const opt : PIXI.Container = this.options[i];
-            if(opt.visible && this._containsPoint(opt, event.data.global)) {
-                opt.emit(eventName, event);
-                return;
-            }
-        }
-    }
-
     private redraw() {
         /*
         this.scrollMask.clear();
@@ -460,14 +450,6 @@ export class ScrollList extends PIXI.Container {
                 this.lastDownOption.emit('pointerupoutside', event);
             }
             this.lastDownOption = null;
-        });
-
-        // these are simple events that can just be relayed
-        const eventsToRelay = ['pointertap'];
-        eventsToRelay.forEach(e => {
-            this.scrollRect.on(e, (event) => {
-                this.relayEvent(e, event);
-            });
         });
     }
 }
