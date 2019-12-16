@@ -87,6 +87,9 @@ function createOptions(n, borderWidth) {
         el.onMouseUpOutside(drawUp);
         el.onMouseOver(drawHover);
         el.onMouseOut(drawNormal);
+        el.on('pointertap', () => {
+            console.log('tapt', i);
+        });
 
         el.on('hide', () => {
             el.visible = false;

@@ -173,6 +173,7 @@ export class ScrollList extends PIXI.Container {
     }
 
     private findOptionAtPoint(p) : PIXI.Container {
+
         for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
             const opt : PIXI.Container = this.options[i];
             if(opt.visible && this._containsPoint(opt, p)) {
@@ -260,6 +261,8 @@ export class ScrollList extends PIXI.Container {
                 return;
             }
         }
+        // if it gets here it didnt run into an ending visible which means the last item is visible.
+        this.endingVisibleChildIndex = this.options.length - 1;
     //    console.log('adjust visibility took', Date.now() - start);
     }
 
@@ -452,6 +455,7 @@ export class ScrollList extends PIXI.Container {
                 opt.emit('pointerup', event);
             } else if(opt && opt === this.lastDownOption) {
                 opt.emit('pointerup', event);
+                opt.emit('pointertap', event);
             } else if (this.lastDownOption) {
                 this.lastDownOption.emit('pointerupoutside', event);
             }

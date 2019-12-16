@@ -33,7 +33,6 @@ export class ScrollBar extends PixiElement {
             lastScrollY = event.data.global.y;
         });
         this.scroller.onDragMove(event => {
-
             if(dontApplyUntilYGreater !== null && !(event.data.global.y >= dontApplyUntilYGreater)) {
                 return;
             }
