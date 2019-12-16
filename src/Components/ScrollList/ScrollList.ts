@@ -163,9 +163,9 @@ export class ScrollList extends PIXI.Container {
     }
 
     private _containsPoint(container: PIXI.Container, p) {
+        p = this.toLocal(p);
         const ix = 0;
         const ax = this.__width;
-
         const iy = container.y - this.currentScroll;
         const ay = iy + container.height;
 
@@ -173,7 +173,7 @@ export class ScrollList extends PIXI.Container {
     }
 
     private findOptionAtPoint(p) : PIXI.Container {
-        for(let i = this.startingVisibleChildIndex; i < this.endingVisibleChildIndex; i++) {
+        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
             const opt : PIXI.Container = this.options[i];
             if(opt.visible && this._containsPoint(opt, p)) {
                 return opt;
@@ -183,7 +183,7 @@ export class ScrollList extends PIXI.Container {
     }
 
     private relayEvent(eventName, event) {
-        for(let i = this.startingVisibleChildIndex; i < this.endingVisibleChildIndex; i++) {
+        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
             const opt : PIXI.Container = this.options[i];
             if(opt.visible && this._containsPoint(opt, event.data.global)) {
                 opt.emit(eventName, event);
@@ -238,13 +238,12 @@ export class ScrollList extends PIXI.Container {
             const canSeeFromBottom = this.__height + this.currentScroll >= option.y - this.performanceOptions.visibilityBuffer;
             const wasVisible = option.visible;
             option.visible = canSeeFromBottom && canSeeFromTop;
-
             if(option.visible && !setFirstVisible) {
                 this.startingVisibleChildIndex = i;
                 setFirstVisible = true;
             }
             if(!option.visible && setFirstVisible) {
-                this.endingVisibleChildIndex = i;
+                this.endingVisibleChildIndex = Math.min(i + 1, this.options.length - 1);
             }
 
             if(wasVisible !== option.visible) {
@@ -280,7 +279,7 @@ export class ScrollList extends PIXI.Container {
             this.animationFrame = null;
             this.currentScroll = this.scrollToDest;
             this.currentAdjustVisibilityDelta = 0;
-            this.adjustVisibility(delta);
+            this.adjustVisibility(null, true);
             return null;
         }
         this.currentScroll = this.tweenFunc(this.scrollCurrentDur, this.lastScroll, this.scrollToDest, this.scrollDuration);
@@ -296,12 +295,22 @@ export class ScrollList extends PIXI.Container {
 
     private applyDrag(difference) {
         if(this.animationFrame) return;
-        this.lastScroll = this._currentScroll;
-        this.scrollLength += difference;
+
         // scroll height is less than total height.. no need to scroll anything.
         if(this.maxHeight <= this.__height) {
             return;
         }
+        if(difference > 0 && this._currentScroll === 0) {
+            this.adjustVisibility(null, true);
+            return;
+        } else if (difference < 0 && this._currentScroll === this.maxHeight - this.__height) {
+            this.adjustVisibility(null, true);
+            return;
+        }
+
+        this.lastScroll = this._currentScroll;
+        this.scrollLength += difference;
+
         this.scrollToDest = this.scrollLength >= 0 ?
             Math.min(this.maxHeight - this.__height, this._currentScroll - difference) :
             Math.max(0, this._currentScroll - difference);
@@ -334,14 +343,14 @@ export class ScrollList extends PIXI.Container {
         }
 
         this.scrollToDest = power >= 0 ?
-            Math.min(this.maxHeight - this.__height, this._currentScroll + diff) :
+            Math.min( this.maxHeight - this.__height, this._currentScroll + diff) :
             Math.max(0, this._currentScroll + diff);
 
      //   if(this.scrollToDest === this.maxHeight - this.__height || this.scrollToDest === 0) {}
 
         const distanceToTraverse = Math.abs(this._currentScroll - this.scrollToDest);
         let maxTime;
-        if(this.scrollToDest === 0 || this.scrollToDest === this.maxHeight - this.__height) {
+        if(this.scrollToDest === 0 || this.scrollToDest === this.maxHeight - this.__height + 0) {
             maxTime = distanceToTraverse > 1000 ? 1000 : distanceToTraverse > 500 ? 500 : 200;
         } else {
             maxTime = distanceToTraverse > 2700 ? 4000 : distanceToTraverse > 2300 ? 3500 : distanceToTraverse > 1500 ? 3000 : distanceToTraverse > 1000 ? 2700 : distanceToTraverse > 700 ? 2300 : distanceToTraverse > 500 ? 2000 : distanceToTraverse > 300 ? 1500 : distanceToTraverse > 100 ? 1000 : 700;
@@ -351,6 +360,11 @@ export class ScrollList extends PIXI.Container {
     }
 
     set currentScroll(value) {
+        if(value < 0) {
+            value = 0;
+        } else if (value > this.maxHeight - this.__height) {
+            value = this.maxHeight - this.__height
+        }
         this._currentScroll = value;
         if (this.scrollBar) {
             //  this.scrollBar.adjust(this._currentScroll);

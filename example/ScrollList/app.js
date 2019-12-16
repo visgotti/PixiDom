@@ -23,7 +23,7 @@ stage.width = 600;
 stage.height = 600;
 
 const scrollListWidth = 300;
-const scrollListHeight = 500;
+const scrollListHeight = 400;
 
 function getRandomColor() {
     var letters = '0123456789ABCDEF';
@@ -80,7 +80,9 @@ function createOptions(n, borderWidth) {
         }
 
         drawNormal();
-        el.onMouseDown(drawDown);
+        el.onMouseDown(() => {
+            drawDown();
+        });
         el.onMouseUp(drawUp);
         el.onMouseUpOutside(drawUp);
         el.onMouseOver(drawHover);
@@ -98,10 +100,10 @@ function createOptions(n, borderWidth) {
 }
 
 const scrollList = new PIXI.ScrollList({ width: scrollListWidth, height: scrollListHeight});
-scrollList.addScrollItems(createOptions(1000, 5));
-console.log('scroll List became', scrollList);
+scrollList.addScrollItems(createOptions(100, 5));
 stage.addChild(scrollList);
-
+scrollList.y = 100;
+scrollList.x = 100;
 setInterval(() => {
    renderer.render(stage);
 }, 1000/60);
