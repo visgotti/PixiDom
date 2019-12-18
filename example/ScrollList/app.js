@@ -79,6 +79,19 @@ function createOptions(n, borderWidth) {
             isOver ? drawHover() : drawNormal();
         }
 
+        /*
+        const g2 = new PIXI.Graphics();
+        g2.interactive = true;
+        g2.beginFill(0x000000);
+        g2.drawRect(0, 0, 20, 20);
+        g2.on('pointerdown', () => {
+           console.log('clicked g2 of', i);
+        });
+        el.addChild(g2);
+        g2.x = 50;
+
+         */
+
         drawNormal();
         el.onMouseDown(() => {
             drawDown();
@@ -87,15 +100,18 @@ function createOptions(n, borderWidth) {
         el.onMouseUpOutside(drawUp);
         el.onMouseOver(drawHover);
         el.onMouseOut(drawNormal);
-        el.on('pointertap', () => {
-            console.log('tapt', i);
+
+        el.on('pointerdown', () => {
+            console.log('POINTER DOWN ON', i);
+        });
+        el.on('pointerup', () => {
+            console.log('POINTER UP ON', i);
         });
 
         el.on('hide', () => {
-            el.visible = false;
+            drawNormal();
         });
         el.on('show', () => {
-            el.visible = true;
         });
         options.push(el);
     }

@@ -57,8 +57,6 @@ export declare class ScrollList extends PIXI.Container {
     constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>, scrollPerformanceOptions?: ScrolllPerformanceOptions);
     private findVisible;
     private _containsPoint;
-    private findOptionAtPoint;
-    private relayEvent;
     private redraw;
     private repositionOptions;
     private adjustVisibility;
@@ -70,5 +68,6 @@ export declare class ScrollList extends PIXI.Container {
     addScrollItems(containers: Array<PIXI.Container>): void;
     addScrollItem(container: PIXI.Container): void;
     removeScrollItem(indexOrContainer: any): boolean;
-    private initializeEventPropogation;
+    private findOptionAtPoint;
+    private recurseChildren;
 }

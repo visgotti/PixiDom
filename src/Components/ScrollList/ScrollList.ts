@@ -55,7 +55,6 @@ export class ScrollList extends PIXI.Container {
     private __height: number;
 
     private pointerdownStart: number = 0;
-
     private startingVisibleChildIndex: number = 0;
     private endingVisibleChildIndex: number = 0;
 
@@ -90,7 +89,6 @@ export class ScrollList extends PIXI.Container {
                 }
             }
         }
-
         this.scrollbarScroll = new PIXI.Graphics();
         this.scrollStyleOptions = scrollStyleOptions;
         this.scrollLength = 0;
@@ -109,15 +107,13 @@ export class ScrollList extends PIXI.Container {
 
         this.addChild(this.scrollMask);
         this.addChild(this.po);
+        this.po.interactive = true;
         this.po.mask = this.scrollMask;
 
-        this.addChild(this.scrollRect);
+     //   this.addChild(this.scrollRect);
 
-    //    this.po.onSwipe(this.applySwipe.bind(this));
-
-
+        this.po.onSwipe(this.applySwipe.bind(this));
         let lastScrollY;
-
         let heldTimeout = null;
         this.on('pointerdown', (event) => {
             if(this.animationFrame !== null) {
@@ -135,9 +131,8 @@ export class ScrollList extends PIXI.Container {
             }
         });
 
-        this.initializeEventPropogation();
-
-        this.scrollRect.onDragStart(event => {
+     //   this.initializeEventPropogation();
+        this.po.onDragStart(event => {
             this.tweenFunc = tweenFunctions.easeOutElastic;
             this.scrollLength = 0;
             this.scrollCurrentDur = 0;
@@ -145,12 +140,12 @@ export class ScrollList extends PIXI.Container {
             this.currentAdjustVisibilityDelta = 0;
             lastScrollY = event.data.global.y;
         });
-        this.scrollRect.onDragMove(event => {
+        this.po.onDragMove(event => {
             const diff =  event.data.global.y - lastScrollY;
             lastScrollY = event.data.global.y;
             this.applyDrag(diff);
         });
-        this.scrollRect.onDragEnd(event => {
+        this.po.onDragEnd(event => {
             this.adjustVisibility(null, true);
         });
 
@@ -170,17 +165,6 @@ export class ScrollList extends PIXI.Container {
         const ay = iy + container.height;
 
         return (ix <= p.x && p.x <= ax && iy <= p.y && p.y <= ay)
-    }
-
-    private findOptionAtPoint(p) : PIXI.Container {
-
-        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
-            const opt : PIXI.Container = this.options[i];
-            if(opt.visible && this._containsPoint(opt, p)) {
-                return opt;
-            }
-        }
-        return null;
     }
 
     private redraw() {
@@ -243,6 +227,16 @@ export class ScrollList extends PIXI.Container {
                 } else {
                     option.emit('show');
                 }
+                if(option['just_added']) {
+                    delete option['just_added'];
+                }
+            } else if (option['just_added']) {
+                if(option.visible) {
+                    option.emit('show');
+                } else {
+                    option.emit('hide');
+                }
+                delete option['just_added'];
             }
 
             if(!option.visible && !wasVisible && setFirstVisible) {
@@ -371,13 +365,18 @@ export class ScrollList extends PIXI.Container {
 
     public addScrollItems(containers: Array<PIXI.Container>) {
         containers.forEach(c => {
+            c['just_added'] = true;
+            c.visible = true;
             this.po.addChild(c);
             this.maxHeight += c.height;
-            return this.options.push(c);
+            if(c.interactive) {
+                c.hitArea = new PIXI.Rectangle(0, 0, c.width, c.height);
+            }
+            this.options.push(c);
         });
         this.repositionOptions();
-        this.redraw();
         this.adjustVisibility(null, true);
+        this.redraw();
     }
     public addScrollItem(container: PIXI.Container) {
         this.addScrollItems([container])
@@ -398,58 +397,31 @@ export class ScrollList extends PIXI.Container {
         return false;
     }
 
-    private initializeEventPropogation() {
-        this.scrollRect.on('pointerover', (event) => {
-            const opt = this.findOptionAtPoint(event.data.global);
-            if(opt && opt !== this.lastOverOption) {
-                opt.emit('pointerover', event);
-                if(this.lastOverOption) {
-                    this.lastOverOption.emit('pointerout', event);
-                }
-                this.lastOverOption = opt;
-            }
-        });
-        this.scrollRect.on('pointermove', (event) => {
-            const opt = this.findOptionAtPoint(event.data.global);
-            if(opt) {
-                if(opt !== this.lastOverOption) {
-                    if(this.lastOverOption) {
-                        this.lastOverOption.emit('pointerout', event);
-                    }
-                    this.lastOverOption = opt;
-                    opt.emit('pointerover', event);
-                } else {
-                    opt.emit('pointermove', event);
-                }
-            } else if (this.lastOverOption) {
-                this.lastOverOption.emit('pointerout', event);
-                this.lastOverOption = null;
-            }
-        });
 
-        this.scrollRect.on('pointerdown', (event) => {
-            const opt = this.findOptionAtPoint(event.data.global);
-            if(opt) {
-                opt.emit('pointerdown', event);
-                this.lastDownOption = opt;
+    private findOptionAtPoint(p) : PIXI.Container {
+        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
+            const opt : PIXI.Container = this.options[i];
+            if(opt.visible && this._containsPoint(opt, p)) {
+                return opt;
             }
-        });
+        }
+        return null;
+    }
 
-        this.scrollRect.on('pointerup', event => {
-            this.adjustVisibility(null, true);
-            const opt = this.findOptionAtPoint(event.data.global);
-            if(opt && opt !== this.lastDownOption) {
-                if(this.lastDownOption) {
-                    this.lastDownOption.emit('pointerupoutside', event)
+
+    private recurseChildren(el, point, foundChildren) {
+        if(el.interactive || el.interactiveChildren) {
+            if(this._containsPoint(el, point)) {
+                if(el.interactive) {
+                    foundChildren.push(el);
                 }
-                opt.emit('pointerup', event);
-            } else if(opt && opt === this.lastDownOption) {
-                opt.emit('pointerup', event);
-                opt.emit('pointertap', event);
-            } else if (this.lastDownOption) {
-                this.lastDownOption.emit('pointerupoutside', event);
+                if(el.interactiveChildren && el.children) {
+                    el.children.forEach(child => {
+                        this.recurseChildren(child, point, foundChildren);
+                    });
+                }
             }
-            this.lastDownOption = null;
-        });
+        }
+        return foundChildren;
     }
 }
