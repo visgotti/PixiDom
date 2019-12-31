@@ -167,21 +167,25 @@ export class ScrollList extends PIXI.Container {
         return (ix <= p.x && p.x <= ax && iy <= p.y && p.y <= ay)
     }
 
-    private redraw() {
-        /*
+    public resize(w, h) {
+        this.__width = w;
+        this.__height = h;
         this.scrollMask.clear();
         this.scrollMask
             .beginFill(0xFFFFFF)
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();
-         */
-        /*
+
+        this.listRect.clear();
         this.listRect
             .beginFill(this.scrollStyleOptions.backgroundColor)
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();
 
-         */
+        this.adjustVisibility(null, true);
+    }
+
+    private redraw() {
         this.adjustOptions();
     }
 
@@ -195,8 +199,6 @@ export class ScrollList extends PIXI.Container {
     }
 
     private adjustVisibility(delta, force=false) {
-        const start = Date.now();
-
         if(force) {
             this.currentAdjustVisibilityDelta = 0;
         } else {
@@ -382,18 +384,52 @@ export class ScrollList extends PIXI.Container {
         this.addScrollItems([container])
     }
 
-    public removeScrollItem(indexOrContainer) {
-        let container;
-        if (!isNaN(indexOrContainer)) {
-            container = this.options[indexOrContainer];
-        } else {
-            container = indexOrContainer;
+    public spliceScrollItems(fromIndex, toIndex?) {
+        toIndex = toIndex ? toIndex : this.options.length;
+        const indexArray = [];
+        for(let i = fromIndex; i < toIndex; i++) {
+            indexArray.push(i);
         }
-        const foundOption = this.options.find(o => o === container);
-        if (foundOption) {
-            this.po.removeChild(foundOption);
+        this.removeScrollItems(indexArray);
+    }
+
+    public removeScrollItems(indexOrContainer, destroyItem=true) {
+        if(!(Array.isArray(indexOrContainer))) {
+            indexOrContainer = [indexOrContainer]
+        }
+
+        const indexesToRemove = [];
+        indexOrContainer.forEach(i => {
+            let container;
+            if (!isNaN(i)) {
+                container = this.options[i];
+            } else {
+                container = indexOrContainer;
+            }
+            const foundOption = this.options.find(o => o === container);
+            if (foundOption) {
+                indexesToRemove.push(this.options.indexOf(foundOption));
+                this.maxHeight -= foundOption.height;
+                if(destroyItem) {
+                    foundOption.destroy({ children: true })
+                }
+                this.po.removeChild(foundOption);
+            }
+        });
+        if(indexesToRemove.length) {
+            this.options = this.options.filter((o, i) => {
+                return !(indexesToRemove.includes(i));
+            });
+
+            if(this._currentScroll > this.maxHeight - this.__height) {
+                this.currentScroll = this.maxHeight - this.__height;
+            }
+            this.repositionOptions();
+            this.adjustVisibility(null, true);
             this.redraw();
+            return true;
         }
+
         return false;
     }
 
