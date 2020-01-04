@@ -68,7 +68,8 @@ export declare class ScrollList extends PIXI.Container {
     currentScroll: any;
     addScrollItems(containers: Array<PIXI.Container>): void;
     addScrollItem(container: PIXI.Container): void;
-    spliceScrollItems(fromIndex: any, toIndex?: any): void;
+    private recalculateHeight;
+    spliceScrollItems(fromIndex: any, toIndex?: any, destroyItem?: boolean): void;
     removeScrollItems(indexOrContainer: any, destroyItem?: boolean): boolean;
     private findOptionAtPoint;
     private recurseChildren;

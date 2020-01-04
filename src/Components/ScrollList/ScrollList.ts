@@ -370,12 +370,12 @@ export class ScrollList extends PIXI.Container {
             c['just_added'] = true;
             c.visible = true;
             this.po.addChild(c);
-            this.maxHeight += c.height;
             if(c.interactive) {
                 c.hitArea = new PIXI.Rectangle(0, 0, c.width, c.height);
             }
             this.options.push(c);
         });
+        this.recalculateHeight();
         this.repositionOptions();
         this.adjustVisibility(null, true);
         this.redraw();
@@ -384,13 +384,21 @@ export class ScrollList extends PIXI.Container {
         this.addScrollItems([container])
     }
 
-    public spliceScrollItems(fromIndex, toIndex?) {
-        toIndex = toIndex ? toIndex : this.options.length;
+    private recalculateHeight() {
+        let height = 0;
+        this.options.forEach(c => {
+            height += c.height;
+        });
+        this.maxHeight = height;
+    }
+
+    public spliceScrollItems(fromIndex, toIndex?, destroyItem=true) {
+        toIndex = toIndex >= 0 ? toIndex : this.options.length;
         const indexArray = [];
         for(let i = fromIndex; i < toIndex; i++) {
             indexArray.push(i);
         }
-        this.removeScrollItems(indexArray);
+        this.removeScrollItems(indexArray, destroyItem);
     }
 
     public removeScrollItems(indexOrContainer, destroyItem=true) {
@@ -409,13 +417,16 @@ export class ScrollList extends PIXI.Container {
             const foundOption = this.options.find(o => o === container);
             if (foundOption) {
                 indexesToRemove.push(this.options.indexOf(foundOption));
-                this.maxHeight -= foundOption.height;
+
+                if(foundOption && foundOption.parent === this.po) {
+                    this.po.removeChild(foundOption);
+                }
                 if(destroyItem) {
                     foundOption.destroy({ children: true })
                 }
-                this.po.removeChild(foundOption);
             }
         });
+        this.recalculateHeight();
         if(indexesToRemove.length) {
             this.options = this.options.filter((o, i) => {
                 return !(indexesToRemove.includes(i));
