@@ -426,7 +426,6 @@ export class ScrollList extends PIXI.Container {
                 }
             }
         });
-        this.recalculateHeight();
         if(indexesToRemove.length) {
             this.options = this.options.filter((o, i) => {
                 return !(indexesToRemove.includes(i));
@@ -435,6 +434,7 @@ export class ScrollList extends PIXI.Container {
             if(this._currentScroll > this.maxHeight - this.__height) {
                 this.currentScroll = this.maxHeight - this.__height;
             }
+            this.recalculateHeight();
             this.repositionOptions();
             this.adjustVisibility(null, true);
             this.redraw();
