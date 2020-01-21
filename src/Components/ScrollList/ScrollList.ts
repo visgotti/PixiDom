@@ -254,8 +254,11 @@ export class ScrollList extends PIXI.Container {
 
     private adjustOptions() {
       //  console.log('adjust options', this.currentScroll);
-        this.po.y = -this.currentScroll;
-        this.adjustedIndex++;
+        if(this.po && this.po.parent === this) {
+            this.po.y = -this.currentScroll;
+            this.adjustedIndex++;
+        }
+
     }
 
     private animateScroll(ts: number) {

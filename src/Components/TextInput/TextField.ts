@@ -132,12 +132,9 @@ class TextField extends PIXI.Container {
        // this.mask = this.textboxMask;
 
         this.updateStyle(_defaultStyleOptions);
-
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
 
         this.show();
-
-
     }
 
     public updateStyle(styleOptions: StyleOptionsParams) {
@@ -361,7 +358,7 @@ class TextField extends PIXI.Container {
             leftChar = this.textSprite.children[index - 1];
         }
         // get the position of character to left plus 1 pixel for padding
-        return leftChar.x + leftChar.width + 1;
+        return leftChar.x + leftChar.width + 1 + this.styleOptions.xPadding;
     }
 
     private moveCursor(indexChange) {
