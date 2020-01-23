@@ -20,9 +20,6 @@ export interface ButtonStyleOptions {
     defaultStyle: ButtonStyleStateOptions,
     hoverStyle?: ButtonStyleStateOptions,
     pressedStyle?: ButtonStyleStateOptions,
-    selectedStyle?: ButtonStyleStateOptions
-    hoverSelectedStyle?: ButtonStyleStateOptions,
-    pressedSelectedStyle?: ButtonStyleStateOptions,
     font: string,
 }
 
@@ -30,18 +27,15 @@ const stateStylesToValidate = ["hoverStyle", "defaultStyle", "pressedStyle"];
 
 enum BtnState {
     NONE,
-    SELECTED,
     HOVER,
     PRESSED,
-    HOVER_SELECTED,
-    PRESSED_SELECTED,
 }
 export class Button extends PixiElement {
     private _text: string;
     private txtSprite: PIXI.extras.BitmapText;
     private bgGraphic: PIXI.Graphics;
     private bgSprite: PIXI.Sprite;
-    private styleOptions: ButtonStyleOptions;
+    private styleOptions: ButtonStyleOptions = { defaultStyle: {}, font: '' };
     private _currentStyleState: ButtonStyleStateOptions;
     private _btnState: BtnState = BtnState.NONE;
     constructor(text: string, styleOptions: ButtonStyleOptions) {
@@ -49,35 +43,18 @@ export class Button extends PixiElement {
         this._text = text;
         this.interactive = true;
         this.buttonMode = true;
+        this.on('pointerdown', () => this.btnState = BtnState.PRESSED);
+        this.on('pointerup', () => this.btnState = BtnState.NONE);
+        this.on('pointerupoutside', () => this.btnState = BtnState.NONE);
+        this.on('pointerover', () => this.btnState = BtnState.HOVER);
+        this.on('pointerout', () => this.btnState = BtnState.NONE);
         this.updateStyle(styleOptions);
-
-        this.on('pointerdown', () => this.btnState = 'pressed');
-        this.on('pointertap', () => this.btnState = 'selected');
-        this.on('pointerup', () => {
-            if(this._btnState !== BtnState.SELECTED && this._btnState !== BtnState.HOVER) {
-                this.btnState = BtnState.NONE;
-            }
-        });
-        this.on('pointerupoutside', () => {
-            if(this._btnState !== BtnState.SELECTED) {
-                this.btnState = BtnState.NONE;
-            }
-        });
-        this.on('pointerover', () => {
-            if(this._btnState !== BtnState.SELECTED) {
-                this.btnState = BtnState.HOVER;
-            } else {
-                this.btnState = BtnState.HOVER_SELECTED
-            }
-        })
-        //TODO pointerout/exit?
-
     }
 
     set btnState(newState) {
         if(newState !== this._btnState) {
-            this.redraw();
             this._btnState = newState;
+            this.redraw();
         }
     }
 
@@ -90,7 +67,7 @@ export class Button extends PixiElement {
         Object.keys(styleOptions).forEach(key => {
             this.styleOptions[key] = styleOptions[key];
         });
-   //     this.redraw();
+        this.redraw();
     }
 
     public redraw() {
@@ -101,12 +78,16 @@ export class Button extends PixiElement {
 
     public redrawText() {
         if(!this.txtSprite) {
-            this.txtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'left'});
+            this.txtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'center'});
             this.addChild(this.txtSprite)
         }
+        if(this.currentStyleState.textColor || this.currentStyleState.textColor == 0) {
+            this.txtSprite.tint = this.currentStyleState.textColor;
+        }
         this.txtSprite.text = this._text;
-        this.txtSprite.x = this.width / 2 - this.txtSprite.width / 2;
-        this.txtSprite.y = this.width / 2 - this.txtSprite.height / 2;
+        this.txtSprite.maxWidth = this.width;
+        this.txtSprite.x = this.currentStyleState.width / 2 - this.txtSprite.width / 2;
+        this.txtSprite.y = this.currentStyleState.height / 2 - this.txtSprite.height / 2;
     }
 
     public redrawBg() {
@@ -144,12 +125,13 @@ export class Button extends PixiElement {
             this.bgSprite.x = width / 2 - this.bgSprite.x / 2;
             this.bgSprite.y = height / 2 - this.bgSprite.y / 2;
         }
+        this.hitArea = new PIXI.Rectangle(0, 0, width, height);
     }
 
     private clear() {
         if(this.txtSprite) {
             this.removeChild(this.txtSprite);
-            this.txtSprite.destroy({ children: true })
+            this.txtSprite.destroy({ children: true });
             this.txtSprite = null;
         }
         if(this.bgGraphic) {
@@ -165,20 +147,19 @@ export class Button extends PixiElement {
     }
 
     get currentStyleState() {
-        switch(this.btnState) {
-            case 'none':
+        switch(this._btnState) {
+            case BtnState.NONE:
                 return this.styleOptions.defaultStyle;
                 break;
-            case 'hover':
+            case BtnState.HOVER:
                 return this.styleOptions.hoverStyle ? this.styleOptions.hoverStyle : this.styleOptions.defaultStyle;
                 break;
-            case 'pressed':
+            case BtnState.PRESSED:
                 // cascade to check if we have pressedStyle defined, if so use it, otherwise use hover, otherwise use default
-                return this.styleOptions.pressedStyle ?
-                    this.styleOptions.pressedStyle : this.styleOptions.hoverStyle ?
-                        this.styleOptions.hoverStyle : this.styleOptions.defaultStyle;
+                return this.styleOptions.pressedStyle ? this.styleOptions.pressedStyle :
+                    this.styleOptions.hoverStyle ? this.styleOptions.hoverStyle :
+                        this.styleOptions.defaultStyle;
                 break;
         }
     }
-
 }

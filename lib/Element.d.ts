@@ -65,7 +65,7 @@ export declare class PixiElement extends PIXI.Container {
     onMouseOver(handler: any): void;
     onMouseOut(handler: any): void;
     onMouseMove(handler: any): void;
-    onMouseTap(handler: any): void;
+    onClick(handler: any): void;
     onHeldDown(handler: any, timeout: number): void;
     /**
      *
