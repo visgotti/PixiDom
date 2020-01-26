@@ -94,6 +94,15 @@ class TextField extends PIXI.Container {
     private onSubmitHandler: Function = () => {};
     constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?, ignoreKeys?) {
         super();
+        this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
+
+        // override destroy method to call blur before destroy so we unregister document handlers if needed.
+        const oldDestroy = this.destroy.bind(this);
+        this['destroy'] = (options) => {
+           this.blur();
+           oldDestroy(options);
+        }
+
         if(ignoreKeys) {
             this.ignoreKeys = ignoreKeys;
         }
@@ -132,7 +141,6 @@ class TextField extends PIXI.Container {
        // this.mask = this.textboxMask;
 
         this.updateStyle(_defaultStyleOptions);
-        this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
 
         this.show();
     }

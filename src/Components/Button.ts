@@ -79,10 +79,12 @@ export class Button extends PixiElement {
     public redrawText() {
         if(!this.txtSprite) {
             this.txtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'center'});
-            this.addChild(this.txtSprite)
         }
         if(this.currentStyleState.textColor || this.currentStyleState.textColor == 0) {
             this.txtSprite.tint = this.currentStyleState.textColor;
+        }
+        if(!this.txtSprite.parent) {
+            this.addChild(this.txtSprite);
         }
         this.txtSprite.text = this._text;
         this.txtSprite.maxWidth = this.width;
@@ -92,13 +94,14 @@ export class Button extends PixiElement {
 
     public redrawBg() {
         let {backgroundColor, borderRadius, borderColor, borderWidth, width, height, backgroundTexture, backgroundOpacity, borderOpacity} = this.currentStyleState;
-
-        if(backgroundColor || backgroundColor === 0) {
+        if(backgroundColor || backgroundColor == 0) {
             if(!this.bgGraphic) {
                 this.bgGraphic = new PIXI.Graphics();
-                this.addChild(this.bgGraphic);
             } else {
                 this.bgGraphic.clear();
+            }
+            if(!this.bgGraphic.parent) {
+                this.addChild(this.bgGraphic);
             }
             backgroundOpacity = backgroundOpacity || backgroundOpacity == 0 ? backgroundOpacity : 1;
             this.bgGraphic.beginFill(backgroundColor, backgroundOpacity);
@@ -119,7 +122,9 @@ export class Button extends PixiElement {
         if(backgroundTexture) {
             if(!this.bgSprite) {
                 this.bgSprite = new PIXI.Sprite();
-                this.addChild(this.bgSprite);
+            }
+            if(!this.bgSprite.parent) {
+                this.addChild(this.bgGraphic);
             }
             this.bgSprite.texture = backgroundTexture;
             this.bgSprite.x = width / 2 - this.bgSprite.x / 2;

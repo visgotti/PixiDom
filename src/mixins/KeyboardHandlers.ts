@@ -45,7 +45,6 @@ export default function <TBase extends Constructor>(Base: TBase){
             document.removeEventListener("paste", this.onPaste);
             document.removeEventListener("keypress", this.onKeyPress);
             document.removeEventListener("keydown", this.onKeyDown);
-
         }
 
         public onPaste(event) {
