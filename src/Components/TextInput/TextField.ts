@@ -370,7 +370,7 @@ class TextField extends PIXI.Container {
     }
 
     private moveCursor(indexChange) {
-        const newCursorIndex = this.cursorIndex += indexChange;
+        const newCursorIndex = this.cursorIndex + indexChange;
         if(newCursorIndex > -1 && newCursorIndex <= this.text.length) {
             this.cursorIndex = newCursorIndex;
             this.clearRange();
@@ -429,7 +429,6 @@ class TextField extends PIXI.Container {
         textArray.splice(start, deleteCount, ...replaceWithArray);
         if(this.change(textArray.join(''))) {
             this.cursorIndex = start + replacedLength;
-
             this.clearRange();
             this.redraw();
             return this.text;
@@ -565,12 +564,18 @@ class TextField extends PIXI.Container {
     }
 
     public change(value) : boolean {
-        if(value !== this.textSprite.text) {
+        if(value !== this.text) {
             if(this._maxCharacterLength !== null && value.length > this._maxCharacterLength) {
                 this.onCharLimitHandler(value);
                 return false;
             } else {
+                this._text = value;
                 this.textSprite.text = value;
+                if(this._text === "" && this.textSprite.children) {
+                    this.textSprite.children.forEach(child => {
+                        this.textSprite.removeChild(child);
+                    })
+                }
                 this.textSprite.updateTransform();
                 this.emit('change', value);
                 this.onChangeHandler(value);
@@ -610,6 +615,9 @@ class TextField extends PIXI.Container {
     }
 
     get text() {
+        if(this.textSprite.text === " " && this._text !== " ") {
+            return "";
+        }
         return this.textSprite.text;
     }
 
