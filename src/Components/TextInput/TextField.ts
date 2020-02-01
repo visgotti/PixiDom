@@ -86,12 +86,13 @@ class TextField extends PIXI.Container {
 
     public submitKeyCodes: Array<number> = [13];
     public ignoreKeys: Array<number> = [];
-    public maxCharacterLength: number = null;
+    public _maxCharacterLength: number = null;
 
     private onFocusHandler: Function = () => {};
     private onBlurHandler: Function = () => {};
     private onChangeHandler: Function = () => {};
     private onSubmitHandler: Function = () => {};
+    private onCharLimitHandler: Function = () => {};
     constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?, ignoreKeys?) {
         super();
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
@@ -112,8 +113,7 @@ class TextField extends PIXI.Container {
                 _defaultStyleOptions[key] = styleOptions[key];
             }
         }
-
-        this.maxCharacterLength = maxCharacterLength ? maxCharacterLength : null;
+        this.maxCharacterLength = maxCharacterLength;
     
         this.buttonMode = true;
         this.interactive = true;
@@ -427,14 +427,15 @@ class TextField extends PIXI.Container {
         const deleteCount = end - start;
 
         textArray.splice(start, deleteCount, ...replaceWithArray);
+        if(this.change(textArray.join(''))) {
+            this.cursorIndex = start + replacedLength;
 
-        this.change(textArray.join(''));
-
-        this.cursorIndex = start + replacedLength;
-
-        this.clearRange();
-        this.redraw();
-        return this.text;
+            this.clearRange();
+            this.redraw();
+            return this.text;
+        } else {
+            return this.text;
+        }
     }
 
     private getSelectedRangeIndexes() : {
@@ -502,7 +503,9 @@ class TextField extends PIXI.Container {
             this.redraw();
         }
     }
-
+    public onCharLimit(handler) {
+        this.onCharLimitHandler = handler;
+    }
     public onChange(handler) {
         this.onChangeHandler = handler;
     }
@@ -549,13 +552,32 @@ class TextField extends PIXI.Container {
         }
     }
 
-    public change(value){
-        if(value !== this.textSprite.text) {
-            this.textSprite.text = value;
-            this.textSprite.updateTransform();
-            this.emit('change', value);
-            this.onChangeHandler(value);
+    set maxCharacterLength(value: number) {
+        if(!isNaN(value)) {
+            if(value === null || value < 0) {
+                this._maxCharacterLength = null;
+            } else {
+                this._maxCharacterLength = value;
+            }
+        } else {
+            this._maxCharacterLength = null;
         }
+    }
+
+    public change(value) : boolean {
+        if(value !== this.textSprite.text) {
+            if(this._maxCharacterLength !== null && value.length > this._maxCharacterLength) {
+                this.onCharLimitHandler(value);
+                return false;
+            } else {
+                this.textSprite.text = value;
+                this.textSprite.updateTransform();
+                this.emit('change', value);
+                this.onChangeHandler(value);
+                return true;
+            }
+        }
+        return false;
     }
 
     private startCursorAnimation() {

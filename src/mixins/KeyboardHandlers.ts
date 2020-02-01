@@ -94,7 +94,7 @@ export default function <TBase extends Constructor>(Base: TBase){
                 } else {
                     super.removeLeftOfCursor();
                 }
-            } else if (code == 46) {
+            } else if (code == 46) { //delete
                 if(super.getSelectedRange()) {
                     super.replaceSelectedWith("");
                 } else {

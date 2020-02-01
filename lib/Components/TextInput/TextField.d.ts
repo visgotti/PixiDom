@@ -55,11 +55,12 @@ declare class TextField extends PIXI.Container {
     private inDrag;
     submitKeyCodes: Array<number>;
     ignoreKeys: Array<number>;
-    maxCharacterLength: number;
+    _maxCharacterLength: number;
     private onFocusHandler;
     private onBlurHandler;
     private onChangeHandler;
     private onSubmitHandler;
+    private onCharLimitHandler;
     constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?: any, ignoreKeys?: any);
     updateStyle(styleOptions: StyleOptionsParams): void;
     private redraw;
@@ -85,6 +86,7 @@ declare class TextField extends PIXI.Container {
     private charFromPosition;
     private removeLeftOfCursor;
     private removeRightOfCursor;
+    onCharLimit(handler: any): void;
     onChange(handler: any): void;
     onFocus(handler: any): void;
     onBlur(handler: any): void;
@@ -93,7 +95,8 @@ declare class TextField extends PIXI.Container {
     submit(): void;
     focus(): void;
     blur(): void;
-    change(value: any): void;
+    maxCharacterLength: number;
+    change(value: any): boolean;
     private startCursorAnimation;
     private stopCursorAnimation;
     private blinkCursor;

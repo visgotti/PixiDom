@@ -79,6 +79,15 @@ PIXI.loader.load((loader, resources) => {
         styledTextInput.clear();
     });
 
+    const maxLengthTextInput = new PIXI_DOM.TextField('small', null, 35);
+    stage.addChild(maxLengthTextInput);
+    maxLengthTextInput.x = 10;
+    maxLengthTextInput.y = 300;
+    maxLengthTextInput.onCharLimit(text => {
+        console.log('tried inputting text with more than 35 characters:', text);
+    });
+    maxLengthTextInput.change('This input uses max length of 35');
+
     setInterval(() => {
        renderer.render(stage);
     }, 1000/30);
