@@ -1,10 +1,9 @@
 # Pixi Dom
 Starting a library with pixi interface elements
 
+#Components not included here can be seen in the example folder for time being. 
+
 ## Bitmap Font Textfields
-
-### WIP but this is how the api will look, also can be seen in example folder
-
 ```js
 PIXI.loader.add('./fonts/small.fnt');
 PIXI.loader.load(() => {
@@ -38,6 +37,7 @@ PIXI.loader.load(() => {
 })
 ```
 
+```js
 
-12
+```
 

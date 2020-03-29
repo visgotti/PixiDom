@@ -1,6 +1,6 @@
 {
   "name": "pixidom.js",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Simple to use lib that immitates dom elements in pixi.js",
   "scripts": {
     "build": "webpack --config ./webpack.config.js",
