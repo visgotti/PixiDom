@@ -1,4 +1,5 @@
 export class PixiElement extends PIXI.Container {
+    public isMouseOver: Boolean = false;
     private elements: Array<Element>= [];
     private dragPosition = null;
     inDrag: Boolean = false;
@@ -53,6 +54,13 @@ export class PixiElement extends PIXI.Container {
     constructor() {
         super();
         this._addChild = super.addChild;
+
+        this.on('pointerover', () => {
+            this.isMouseOver = true;
+        });
+        this.on('pointerout', () => {
+            this.isMouseOver = false;
+        });
     }
 
     set pointerdownHandler(handler) { this._setEventNameHandler("pointerdown", handler); }
@@ -62,7 +70,6 @@ export class PixiElement extends PIXI.Container {
     set pointermoveHandler(handler) { this._setEventNameHandler("pointermove", handler); }
     set pointeroutHandler(handler) { this._setEventNameHandler("pointerout", handler); }
     set pointertapHandler(handler) { this._setEventNameHandler("pointertap", handler); }
-
 
     set doubleclickHandler(handler) { this._setEventNameHandler("doubleclick", handler); }
     set dragstartHandler(handler) {this._setEventNameHandler("dragstart", handler);}
