@@ -1,7 +1,7 @@
 # Pixi Dom
 Starting a library with pixi interface elements
 
-#Components not included here can be seen in the example folder for time being. 
+# examples folder is best place to look 
 
 ## Bitmap Font Textfields
 ```js
