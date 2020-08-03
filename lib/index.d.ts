@@ -8,3 +8,5 @@ import { ScrollBar } from "./Components/ScrollList/ScrollBar";
 export { ScrollBar };
 import { Toggle } from './Components/Toggle';
 export { Toggle };
+import { Button } from './Components/Button';
+export { Button };
