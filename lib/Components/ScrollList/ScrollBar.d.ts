@@ -21,10 +21,7 @@ export declare class ScrollBar extends PixiElement {
     private scroller;
     private bg;
     private options;
-    private _maxLength;
-    private scrollStart;
     private scrollList;
-    private returnedEarlyDuringScroll;
     constructor(scrollList: ScrollList, options: ScrollBarStyleOptions);
     resizeScrollBar(parentTotalHeight: number, parentMaxHeight: number): void;
     readonly visibleLength: number;

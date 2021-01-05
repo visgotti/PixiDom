@@ -25,10 +25,7 @@ export class ScrollBar extends PixiElement {
     private scroller: Scroller;
     private bg: PIXI.Graphics;
     private options: ScrollBarStyleOptions;
-    private _maxLength: number;
-    private scrollStart : boolean;
     private scrollList : ScrollList;
-    private returnedEarlyDuringScroll : boolean = false;
     constructor(scrollList: ScrollList, options: ScrollBarStyleOptions) {
         super();
         this.scrollList = scrollList;
@@ -59,6 +56,7 @@ export class ScrollBar extends PixiElement {
     }
 
     public setScrollPercent(n: number) {
+        console.error('set', n)
         const utilizedSpaceForPercent = this.visibleLength - this.scroller.height;
         const y = utilizedSpaceForPercent * n;
         this.scroller.y = y;
@@ -75,19 +73,18 @@ export class ScrollBar extends PixiElement {
                 toY = mouseY - this.scroller.height
             }
 
-            if(toY >= 0) {
+            if(toY >= 0 && !this.scrolling) {
                 this.scroller.y = clamp(toY, 0, this.visibleLength-this.scroller.height);
                 this.emitScroll();
             }
         }, 50);
 
+        let prevMouseY;
+        let start;
         this.scroller.onDragStart(event => {
-            this.returnedEarlyDuringScroll = false;
             this.scrolling = true;
-            lastScrollY = event.data.global.y;
-        });
+        }, 0);
         this.scroller.onDragEnd(event => {
-            this.returnedEarlyDuringScroll = false;
             this.scrolling = false;
         });
         this.scroller.onDragMove(event => {
@@ -96,22 +93,13 @@ export class ScrollBar extends PixiElement {
             const mouseY = event.data.global.y;
             const globalP = this.getGlobalPosition();
             const globalScrollY = this.scroller.y + globalP.y;
-            if(this.returnedEarlyDuringScroll) {
-                const padding = Math.min(this.scroller.height / 4, 30);
-                if(mouseY+padding > globalScrollY + this.scroller.height || mouseY-padding < globalScrollY) {
-                    return;
-                }
-            } else {
-                if (mouseY > globalScrollY + this.scroller.height || mouseY < globalScrollY) {
-                    this.returnedEarlyDuringScroll = true;
-                    return;
-                }
+            let extra = 0;
+            if(mouseY > globalScrollY + this.scroller.height) {
+                extra = mouseY - (globalScrollY + this.scroller.height);
+            } else if (mouseY < globalScrollY) {
+                extra = mouseY - globalScrollY;
             }
-            this.returnedEarlyDuringScroll = false;
-            //if(Math.abs(mouseY - scrollerGlobalCenterY) > this.scroller.height/2) {
-
-           // }
-            this.scroller.y = clamp(this.scroller.y + movementY, 0, this.visibleLength-this.scroller.height);
+            this.scroller.y = clamp(this.scroller.y + movementY + extra, 0, this.visibleLength-this.scroller.height);
             this.emitScroll();
         })
     }
