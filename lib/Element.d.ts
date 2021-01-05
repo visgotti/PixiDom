@@ -1,5 +1,6 @@
 /// <reference types="pixi.js" />
 export declare class PixiElement extends PIXI.Container {
+    isMouseOver: Boolean;
     private elements;
     private dragPosition;
     inDrag: Boolean;

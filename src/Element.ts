@@ -132,6 +132,7 @@ export class PixiElement extends PIXI.Container {
     public onMouseMove(handler) { this.pointermoveHandler = handler; }
     public onClick(handler) { this.pointertapHandler = handler; }
     public onHeldDown(handler, timeout: number) {
+        !this._pointerdownHandler && this.onMouseDown(() => {});
         this._setHeldDownHandler(handler, timeout)
     }
 

@@ -1,9 +1,10 @@
-/// <reference types="pixi.js" />
 export declare type ScrollItemOptions = {
     container: PIXI.Container;
     onClick?: Function;
 };
 import { ValidMeasurement } from "../../types";
+import { ScrollBarStyleOptions } from './ScrollBar';
+import { DestroyOptions } from "pixi.js";
 export declare type ScrollStyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
@@ -16,10 +17,11 @@ export declare type ScrollStyleOptions = {
     borderOpacity: number;
     xPadding: number;
     yPadding: number;
-    scrollBarWidth: number;
-    scrollBarSide: "left" | "right";
+    scrollBarOptions?: ScrollBarStyleOptions;
 };
 export declare type ScrolllPerformanceOptions = {
+    disableScrollWheelScroll: boolean;
+    disableTouchScroll: boolean;
     visibilityBuffer: number;
     adjustVisibilityTime: number;
 };
@@ -49,13 +51,25 @@ export declare class ScrollList extends PIXI.Container {
     private listRect;
     private scrollLength;
     private adjustedIndex;
-    private maxHeight;
+    maxHeight: number;
     private lastOverOption;
     private lastDownOption;
+    freezeScroll: boolean;
     private tweenFunc;
+    private _needsUpdateScoller;
+    private _registeredScrollEvent;
     readonly performanceOptions: ScrolllPerformanceOptions;
     constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>, scrollPerformanceOptions?: ScrolllPerformanceOptions);
+    private handleScrollWheelScroll;
+    destroy(options?: DestroyOptions | boolean): void;
+    readonly utilizedLength: number;
+    readonly scrollPercent: number;
+    private registerScrollEvents;
+    setScrollPercent(n: number): void;
     private findVisible;
+    freeze(): void;
+    unfreeze(): void;
+    toggleFreezeScroll(freeze: boolean): void;
     private _containsPoint;
     resize(w: any, h: any): void;
     private redraw;

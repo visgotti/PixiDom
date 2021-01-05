@@ -13,6 +13,8 @@ export interface ButtonStyleStateOptions {
     borderRadius?: number;
 }
 export interface ButtonStyleOptions {
+    useBitmapText: boolean;
+    fontSize?: number;
     defaultStyle: ButtonStyleStateOptions;
     hoverStyle?: ButtonStyleStateOptions;
     pressedStyle?: ButtonStyleStateOptions;
@@ -20,6 +22,7 @@ export interface ButtonStyleOptions {
 }
 export declare class Button extends PixiElement {
     private _text;
+    private bitmapTxtSprite;
     private txtSprite;
     private bgGraphic;
     private bgSprite;
@@ -32,6 +35,7 @@ export declare class Button extends PixiElement {
     updateStyle(styleOptions: ButtonStyleOptions): void;
     redraw(): void;
     redrawText(): void;
+    readonly textSpriteUtilized: PIXI.extras.BitmapText | PIXI.Text;
     redrawBg(): void;
     private clear;
     readonly currentStyleState: ButtonStyleStateOptions;

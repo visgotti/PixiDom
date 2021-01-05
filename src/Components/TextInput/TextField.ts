@@ -1,6 +1,7 @@
 import { parseLengthMeasurements } from "../../utils";
 import KeyboardHandlerMixin from "../../mixins/KeyboardHandlers";
 import { ValidMeasurement } from "../../types";
+
 export type StyleOptions = {
     width?: ValidMeasurement,
     height?: ValidMeasurement,

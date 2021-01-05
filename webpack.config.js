@@ -10,6 +10,7 @@ module.exports = function() {
             libraryTarget: "umd",
             library: "PIXI_DOM"
         },
+        devtool: "source-map",
         module: {
             rules: [
                 { test: /\.ts$/, loader: "ts-loader" },

@@ -19,15 +19,12 @@ export { Button };
 import { string2hex } from "./utils";
 
 if(PIXI !== undefined) {
-    if(PIXI['Toggle']) {
-        throw new Error('PIXI.Toggle was already defined')
-    }
-    PIXI['Toggle'] = Toggle;
-    PIXI['TextField'] = TextField;
-    PIXI['Element'] = PixiElement;
-    PIXI['ScrollBar'] = ScrollBar;
-    PIXI['ScrollList'] = ScrollList;
-    PIXI['Button'] = Button;
+    PIXI['Toggle'] = PIXI['Toggle'] || Toggle;
+    PIXI['TextField'] = PIXI['TextField'] || TextField;
+    PIXI['Element'] = PIXI['Element'] || PixiElement;
+    PIXI['ScrollBar'] = PIXI['ScrollBar'] || ScrollBar;
+    PIXI['ScrollList'] = PIXI['ScrollList'] || ScrollList;
+    PIXI['Button'] = PIXI['Button']|| Button;
     if(PIXI.utils && !PIXI.utils['string2hex']) {
         PIXI.utils['string2hex'] = string2hex;
     }

@@ -107,7 +107,6 @@ function createOptions(n, borderWidth) {
         el.on('pointerup', () => {
             console.log('POINTER UP ON', i);
         });
-
         el.on('hide', () => {
             drawNormal();
         });
@@ -118,13 +117,13 @@ function createOptions(n, borderWidth) {
     return options;
 }
 
-const scrollList = new PIXI.ScrollList({ width: scrollListWidth, height: scrollListHeight});
-scrollList.addScrollItems(createOptions(10, 5));
+const scrollList = new PIXI.ScrollList({ width: scrollListWidth, height: scrollListHeight, scrollBarOptions: { width: 30, height: 100, scrollerOptions: { color: 0xff0000 } }}, null, { disableTouchScroll: true });
+scrollList.addScrollItems(createOptions(50, 5));
 stage.addChild(scrollList);
 scrollList.y = 100;
 scrollList.x = 100;
 
-PIXI.loader.add('../fonts/small.fnt');
+PIXI.loader.add('../../fonts/small.fnt');
 PIXI.loader.load((loader, resources) => {
     const addTenButton = new PIXI.extras.BitmapText('Add 10 options', { font: 'small', align: "left" });
     addTenButton.interactive = true;

@@ -9,7 +9,8 @@ const tweenFunctions = require('tween-functions');
 import { PixiElement } from "../../Element";
 import { ValidMeasurement } from "../../types";
 
-import { ScrollBar } from './ScrollBar';
+import {ScrollBar, ScrollBarStyleOptions} from './ScrollBar';
+import {DestroyOptions} from "pixi.js";
 
 export type ScrollStyleOptions = {
     width?: ValidMeasurement,
@@ -23,15 +24,18 @@ export type ScrollStyleOptions = {
     borderOpacity: number,
     xPadding: number,
     yPadding: number,
-    scrollBarWidth: number,
-    scrollBarSide: "left" | "right"
+    scrollBarOptions?: ScrollBarStyleOptions,
 }
 
 export type ScrolllPerformanceOptions = {
+    disableScrollWheelScroll: boolean;
+    disableTouchScroll : boolean;
     visibilityBuffer: number;
     adjustVisibilityTime: number;
 }
 const defaultPerformanceOptions = {
+    disableTouchScroll: false,
+    disableScrollWheelScroll: false,
     visibilityBuffer: 200,
     adjustVisibilityTime: 130,
 }
@@ -67,21 +71,25 @@ export class ScrollList extends PIXI.Container {
     private listRect: PIXI.Graphics = new PIXI.Graphics();
     private scrollLength: number = 0;
     private adjustedIndex: number = 0;
-    private maxHeight: number = 0;
+    maxHeight: number = 0;
     private lastOverOption: PIXI.Container = null;
     private lastDownOption: PIXI.Container = null;
-
+    public freezeScroll: boolean = false;
     private tweenFunc: Function;
+    private _needsUpdateScoller : boolean = true;
+    private _registeredScrollEvent : boolean = false;
 
     readonly performanceOptions: ScrolllPerformanceOptions;
     constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>, scrollPerformanceOptions?: ScrolllPerformanceOptions) {
         super();
+        this.handleScrollWheelScroll = this.handleScrollWheelScroll.bind(this);
+
         this.interactive = true;
         this.interactiveChildren = true;
         this.__width = parseLengthMeasurements(scrollStyleOptions.width).value;
         this.__height = parseLengthMeasurements(scrollStyleOptions.height).value;
 
-        this.performanceOptions = scrollPerformanceOptions ? scrollPerformanceOptions : defaultPerformanceOptions;
+        this.performanceOptions = scrollPerformanceOptions ? scrollPerformanceOptions : { ...defaultPerformanceOptions };
         if(scrollPerformanceOptions) {
             for(let key in defaultPerformanceOptions) {
                 if(!scrollPerformanceOptions.hasOwnProperty(key)) {
@@ -101,7 +109,6 @@ export class ScrollList extends PIXI.Container {
         this.listRect.drawRect(0, 0, this.__width, this.__height);
         this.listRect.endFill();
         this.scrollRect.addChild(this.listRect);
-        this.scrollRect.onSwipe(this.applySwipe.bind(this));
 
      //   this.scrollMask.hitArea = new PIXI.Rectangle(0, 0, this.__width, this.__height);
 
@@ -112,49 +119,128 @@ export class ScrollList extends PIXI.Container {
 
      //   this.addChild(this.scrollRect);
 
-        this.po.onSwipe(this.applySwipe.bind(this));
         let lastScrollY;
         let heldTimeout = null;
-        this.on('pointerdown', (event) => {
-            if(this.animationFrame !== null) {
-                cancelAnimationFrame(this.animationFrame);
-                if(!this.po.inDrag) {
-                    this.po.emit('dragstart', event);
-                }
-                this.animationFrame = null;
-            }
-        });
-        this.on('pointerup', () => {
-            if(heldTimeout) {
-                clearTimeout(heldTimeout);
-                heldTimeout = null;
-            }
-        });
+
+        if(!this.performanceOptions.disableScrollWheelScroll) {
+            this.registerScrollEvents();
+        }
 
      //   this.initializeEventPropogation();
-        this.po.onDragStart(event => {
-            this.tweenFunc = tweenFunctions.easeOutElastic;
-            this.scrollLength = 0;
-            this.scrollCurrentDur = 0;
-            this.scrollDuration = 0;
-            this.currentAdjustVisibilityDelta = 0;
-            lastScrollY = event.data.global.y;
-        });
-        this.po.onDragMove(event => {
-            const diff =  event.data.global.y - lastScrollY;
-            lastScrollY = event.data.global.y;
-            this.applyDrag(diff);
-        });
-        this.po.onDragEnd(event => {
-            this.adjustVisibility(null, true);
-        });
+        if(!this.performanceOptions.disableTouchScroll) {
+            this.scrollRect.onSwipe(this.applySwipe.bind(this));
+
+            this.on('pointerdown', (event) => {
+                if(this.scrollBar && this.scrollBar.scrolling) return;
+                if(this.performanceOptions.disableTouchScroll) return;
+                if(this.animationFrame !== null) {
+                    cancelAnimationFrame(this.animationFrame);
+                    if(!this.po.inDrag) {
+                        this.po.emit('dragstart', event);
+                    }
+                    this.animationFrame = null;
+                }
+            });
+            this.on('pointerup', () => {
+                if(this.scrollBar && this.scrollBar.scrolling) return;
+                if(this.performanceOptions.disableTouchScroll) return;
+                if(heldTimeout) {
+                    clearTimeout(heldTimeout);
+                    heldTimeout = null;
+                }
+            });
+
+            this.po.onSwipe(this.applySwipe.bind(this));
+            this.po.onDragStart(event => {
+                if(this.scrollBar && this.scrollBar.scrolling) return;
+                if(this.freezeScroll) return;
+                this.tweenFunc = tweenFunctions.easeOutElastic;
+                this.scrollLength = 0;
+                this.scrollCurrentDur = 0;
+                this.scrollDuration = 0;
+                this.currentAdjustVisibilityDelta = 0;
+                lastScrollY = event.data.global.y;
+            });
+            this.po.onDragMove(event => {
+                if(this.scrollBar && this.scrollBar.scrolling) return;
+                if(this.freezeScroll) return;
+                const diff =  event.data.global.y - lastScrollY;
+                lastScrollY = event.data.global.y;
+                this.applyDrag(diff);
+            });
+            this.po.onDragEnd(event => {
+                if(this.scrollBar && this.scrollBar.scrolling) return;
+                this.adjustVisibility(null, true);
+            });
+        }
+        if(scrollStyleOptions.scrollBarOptions) {
+            this.scrollBar = new ScrollBar(this, scrollStyleOptions.scrollBarOptions);
+            this.addChild(this.scrollBar);
+            this.scrollBar.on('scrolled', (percent) => {
+                this._needsUpdateScoller = false;
+                this.setScrollPercent(percent);
+                this._needsUpdateScoller = true;
+            });
+        }
 
        // this.po.mask = this.scrollMask;
         this.redraw();
     }
 
+    private handleScrollWheelScroll(event : WheelEvent) {
+        this.currentScroll += event.deltaY;
+        this.adjustVisibility(null, true);
+    }
+
+    public destroy(options?: DestroyOptions | boolean) {
+        if(this._registeredScrollEvent) {
+            document.removeEventListener('wheel', this.handleScrollWheelScroll);
+            this._registeredScrollEvent = false;
+        }
+        super.destroy(options)
+    }
+
+    get utilizedLength() : number {
+        return this.maxHeight - this.__height;
+    }
+
+    get scrollPercent() : number {
+        return this.currentScroll / this.utilizedLength
+    }
+
+    private registerScrollEvents() {
+        this.once('pointerover', () => {
+            this._registeredScrollEvent = true;
+            document.addEventListener('wheel', this.handleScrollWheelScroll);
+            this.once('pointerout', () => {
+                document.removeEventListener('wheel', this.handleScrollWheelScroll);
+                this._registeredScrollEvent = false;
+                this.registerScrollEvents();
+            })
+        })
+    }
+
+    public setScrollPercent(n : number) {
+        n = clamp(n, 0, 1);
+        const prev = this.currentScroll;
+        this.currentScroll = this.utilizedLength * n;
+        if(prev !== this.currentScroll) {
+            this.adjustVisibility(null, true);
+        }
+    }
+
     private findVisible() {
 
+    }
+
+    public freeze() {
+        this.toggleFreezeScroll(true)
+    }
+    public unfreeze() {
+        this.toggleFreezeScroll(false);
+    }
+    public toggleFreezeScroll(freeze: boolean) {
+        this.freezeScroll = freeze;
     }
 
     private _containsPoint(container: PIXI.Container, p) {
@@ -183,10 +269,15 @@ export class ScrollList extends PIXI.Container {
             .endFill();
 
         this.adjustVisibility(null, true);
+        this.scrollBar && this.scrollBar.redraw();
     }
 
     private redraw() {
         this.adjustOptions();
+        if(this.scrollBar) {
+            this.scrollBar.redraw();
+            this.scrollBar.x = this.po.width;
+        }
     }
 
 
@@ -258,7 +349,6 @@ export class ScrollList extends PIXI.Container {
             this.po.y = -this.currentScroll;
             this.adjustedIndex++;
         }
-
     }
 
     private animateScroll(ts: number) {
@@ -358,8 +448,8 @@ export class ScrollList extends PIXI.Container {
             value = this.maxHeight - this.__height
         }
         this._currentScroll = value;
-        if (this.scrollBar) {
-            //  this.scrollBar.adjust(this._currentScroll);
+        if (this.scrollBar && this._needsUpdateScoller) {
+            this.scrollBar.setScrollPercent(this.scrollPercent);
         }
         this.adjustOptions();
     }

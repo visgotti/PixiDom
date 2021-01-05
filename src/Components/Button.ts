@@ -16,7 +16,10 @@ export interface ButtonStyleStateOptions {
     borderOpacity?: number,
     borderRadius?: number,
 }
+
 export interface ButtonStyleOptions {
+    useBitmapText: boolean,
+    fontSize?: number,
     defaultStyle: ButtonStyleStateOptions,
     hoverStyle?: ButtonStyleStateOptions,
     pressedStyle?: ButtonStyleStateOptions,
@@ -30,12 +33,14 @@ enum BtnState {
     HOVER,
     PRESSED,
 }
+
 export class Button extends PixiElement {
     private _text: string;
-    private txtSprite: PIXI.extras.BitmapText;
+    private bitmapTxtSprite: PIXI.extras.BitmapText;
+    private txtSprite: PIXI.Text;
     private bgGraphic: PIXI.Graphics;
     private bgSprite: PIXI.Sprite;
-    private styleOptions: ButtonStyleOptions = { defaultStyle: {}, font: '' };
+    private styleOptions: ButtonStyleOptions = { defaultStyle: {}, font: '', useBitmapText: true };
     private _currentStyleState: ButtonStyleStateOptions;
     private _btnState: BtnState = BtnState.NONE;
     constructor(text: string, styleOptions: ButtonStyleOptions) {
@@ -67,6 +72,7 @@ export class Button extends PixiElement {
         Object.keys(styleOptions).forEach(key => {
             this.styleOptions[key] = styleOptions[key];
         });
+        this.styleOptions.useBitmapText = this.styleOptions.useBitmapText || false;
         this.redraw();
     }
 
@@ -76,20 +82,50 @@ export class Button extends PixiElement {
         this.redrawText();
     }
 
+
     public redrawText() {
-        if(!this.txtSprite) {
-            this.txtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'center'});
+        let sprite;
+        if(this.styleOptions.useBitmapText) {
+            if(!this.bitmapTxtSprite) {
+                this.bitmapTxtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'center'});
+            }
+            if(this.txtSprite) {
+                this.txtSprite.destroy();
+                this.txtSprite = null;
+            }
+            this.bitmapTxtSprite.maxWidth = this.width;
+            sprite = this.bitmapTxtSprite;
+        } else {
+            if(!this.txtSprite) {
+                this.txtSprite = new PIXI.Text('', {fontFamily: this.styleOptions.font, align: 'center'});
+            }
+            if(this.styleOptions.fontSize) {
+                this.txtSprite.style.fontSize = this.styleOptions.fontSize;
+            }
+            if(this.bitmapTxtSprite) {
+                this.bitmapTxtSprite.destroy({ children: true });
+                this.bitmapTxtSprite = null;
+            }
+            sprite = this.txtSprite;
         }
         if(this.currentStyleState.textColor || this.currentStyleState.textColor == 0) {
-            this.txtSprite.tint = this.currentStyleState.textColor;
+            if(this.styleOptions.useBitmapText) {
+                this.bitmapTxtSprite.tint = this.currentStyleState.textColor;
+            } else {
+                this.txtSprite.style.fill = this.currentStyleState.textColor
+            }
         }
-        if(!this.txtSprite.parent) {
-            this.addChild(this.txtSprite);
+        if(!sprite.parent) {
+            this.addChild(sprite);
         }
-        this.txtSprite.text = this._text;
-        this.txtSprite.maxWidth = this.width;
-        this.txtSprite.x = this.currentStyleState.width / 2 - this.txtSprite.width / 2;
-        this.txtSprite.y = this.currentStyleState.height / 2 - this.txtSprite.height / 2;
+        sprite.text = this._text;
+        sprite.x = this.currentStyleState.width / 2 - sprite.width / 2;
+        sprite.y = this.currentStyleState.height / 2 - sprite.height / 2;
+    }
+
+    get textSpriteUtilized() {
+        if(this.styleOptions.useBitmapText) return this.bitmapTxtSprite;
+        return this.txtSprite;
     }
 
     public redrawBg() {
@@ -134,9 +170,10 @@ export class Button extends PixiElement {
     }
 
     private clear() {
-        if(this.txtSprite) {
-            this.removeChild(this.txtSprite);
-            this.txtSprite.destroy({ children: true });
+        if(this.textSpriteUtilized) {
+            this.removeChild(this.textSpriteUtilized);
+            this.textSpriteUtilized.destroy({ children: true });
+            this.bitmapTxtSprite = null;
             this.txtSprite = null;
         }
         if(this.bgGraphic) {
