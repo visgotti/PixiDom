@@ -10,3 +10,5 @@ import { Toggle } from './Components/Toggle';
 export { Toggle };
 import { Button } from './Components/Button';
 export { Button };
+import { Slider } from './Components/Slider';
+export { Slider };

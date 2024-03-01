@@ -1,9 +1,9 @@
-declare type Constructor<T = any> = new (...args: any[]) => T;
+type Constructor<T = any> = new (...args: any[]) => T;
 export default function <TBase extends Constructor>(Base: TBase): {
     new (...args: any[]): {
         [x: string]: any;
         copiedText: string;
-        textStates: string[];
+        textStates: Array<string>;
         currentStateIndex: number;
         stateInterval: any;
         changeStateIndex(change: any): void;

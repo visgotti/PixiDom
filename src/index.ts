@@ -8,17 +8,21 @@ import { ScrollList } from "./Components/ScrollList/ScrollList";
 export { ScrollList };
 
 import { ScrollBar } from "./Components/ScrollList/ScrollBar";
-export { ScrollBar }
+export { ScrollBar };
 
 import { Toggle } from './Components/Toggle';
 export { Toggle };
 
 import { Button } from './Components/Button';
 export { Button };
+import { Slider } from './Components/Slider';
+
+export { Slider };
 
 import { string2hex } from "./utils";
 
 if(PIXI !== undefined) {
+    PIXI['Slider'] = PIXI['Slider'] || Slider;
     PIXI['Toggle'] = PIXI['Toggle'] || Toggle;
     PIXI['TextField'] = PIXI['TextField'] || TextField;
     PIXI['Element'] = PIXI['Element'] || PixiElement;

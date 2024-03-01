@@ -30,13 +30,13 @@ export declare class Button extends PixiElement {
     private _currentStyleState;
     private _btnState;
     constructor(text: string, styleOptions: ButtonStyleOptions);
-    btnState: any;
-    text: any;
+    set btnState(newState: any);
+    set text(value: any);
     updateStyle(styleOptions: ButtonStyleOptions): void;
     redraw(): void;
     redrawText(): void;
-    readonly textSpriteUtilized: PIXI.extras.BitmapText | PIXI.Text;
+    get textSpriteUtilized(): PIXI.extras.BitmapText | PIXI.Text;
     redrawBg(): void;
     private clear;
-    readonly currentStyleState: ButtonStyleStateOptions;
+    get currentStyleState(): ButtonStyleStateOptions;
 }

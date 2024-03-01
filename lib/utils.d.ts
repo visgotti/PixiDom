@@ -1,4 +1,4 @@
-declare type ParsedMeasurement = {
+type ParsedMeasurement = {
     valid: boolean;
     error?: string;
     value?: number;

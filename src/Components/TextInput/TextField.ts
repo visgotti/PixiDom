@@ -626,7 +626,9 @@ class TextField extends PIXI.Container {
         this.change(value);
     }
 
+    // @ts-ignore
     set visible(value) {
+        // @ts-ignore
         super.visible = value;
         this._visible = value;
         if(value) {

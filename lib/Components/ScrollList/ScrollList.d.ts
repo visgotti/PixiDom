@@ -1,11 +1,11 @@
-export declare type ScrollItemOptions = {
+export type ScrollItemOptions = {
     container: PIXI.Container;
     onClick?: Function;
 };
 import { ValidMeasurement } from "../../types";
 import { ScrollBarStyleOptions } from './ScrollBar';
 import { DestroyOptions } from "pixi.js";
-export declare type ScrollStyleOptions = {
+export type ScrollStyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
     backgroundColor: number;
@@ -19,7 +19,7 @@ export declare type ScrollStyleOptions = {
     yPadding: number;
     scrollBarOptions?: ScrollBarStyleOptions;
 };
-export declare type ScrolllPerformanceOptions = {
+export type ScrolllPerformanceOptions = {
     disableScrollWheelScroll: boolean;
     disableTouchScroll: boolean;
     visibilityBuffer: number;
@@ -62,8 +62,8 @@ export declare class ScrollList extends PIXI.Container {
     constructor(scrollStyleOptions: ScrollStyleOptions, scrollItemOptions: Array<ScrollItemOptions>, scrollPerformanceOptions?: ScrolllPerformanceOptions);
     private handleScrollWheelScroll;
     destroy(options?: DestroyOptions | boolean): void;
-    readonly utilizedLength: number;
-    readonly scrollPercent: number;
+    get utilizedLength(): number;
+    get scrollPercent(): number;
     private registerScrollEvents;
     setScrollPercent(n: number): void;
     private findVisible;
@@ -79,7 +79,8 @@ export declare class ScrollList extends PIXI.Container {
     private animateScroll;
     private applyDrag;
     private applySwipe;
-    currentScroll: any;
+    set currentScroll(value: number);
+    get currentScroll(): number;
     addScrollItems(containers: Array<PIXI.Container>): void;
     addScrollItem(container: PIXI.Container): void;
     private recalculateHeight;

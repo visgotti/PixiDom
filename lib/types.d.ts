@@ -1,9 +1,9 @@
 export declare const GLOBAL_PIXI_DTA_PROPERTY_KEY = "__pixi-dom-dynamic-texture-atlas";
-export declare type ValidMeasurement = {
+export type ValidMeasurement = {
     value: number;
     type: string;
 };
-export declare type FlexOptions = {
+export type FlexOptions = {
     flexDirection?: FlexDirection;
     flexWrap?: FlexWrap;
     justifyContent?: JustifyContent;
@@ -27,7 +27,7 @@ export declare enum FlexWrap {
     wrap = "wrap",
     wrap_reverse = "wrap-reverse"
 }
-export declare type InputStyleOptions = {
+export type InputStyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
     cursorHeight: ValidMeasurement;
@@ -43,7 +43,7 @@ export declare type InputStyleOptions = {
     xPadding: number;
     yPadding: number;
 };
-export declare type InputStyleOptionsParams = {
+export type InputStyleOptionsParams = {
     width?: number | string;
     height?: number | string;
     borderWidth?: number;
@@ -59,7 +59,7 @@ export declare type InputStyleOptionsParams = {
     xPadding?: number;
     yPadding?: number;
 };
-export declare type LabelOptions = {
+export type LabelOptions = {
     onLabel: string;
     onColor: number;
     offLabel: string;
@@ -78,7 +78,7 @@ export declare enum AnimationType {
     ELASTIC = "elastic",
     BACK = "back"
 }
-export declare type AnimationOptions = {
+export type AnimationOptions = {
     type: AnimationType;
     duration: number;
     exclude?: Array<string>;
@@ -89,11 +89,11 @@ export declare enum ToggleAnimationExclusions {
     circle_position = "circle_position",
     label = "label"
 }
-export declare type OutlineOptions = {
+export type OutlineOptions = {
     width: number;
     color: number;
 };
-export declare type ToggleOptions = {
+export type ToggleOptions = {
     width: number;
     height: number;
     borderRadius: number;
