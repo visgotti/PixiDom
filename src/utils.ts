@@ -63,3 +63,25 @@ export function string2hex(string) {
     }
     return parseInt(string, 16);
 }
+
+
+type PixiRectLike = { x: number, y: number, width: number, height: number, parent?: { width: number, height: number } }
+
+
+export function centerPixiObject(object: PixiRectLike, opts: { axis: 'y', parent?: { height: number } })
+export function centerPixiObject(object: PixiRectLike, opts: { axis?: 'x' | 'y', parent?: { width?: number, height?: number } }) {
+    if(!object.parent && !opts?.parent) throw new Error(`No parent`);
+    const parentRect : { width?: number, height?: number } = opts?.parent || object.parent;
+    const centerX = () => object.x = parentRect.width / 2 - object.width / 2
+    const centerY = () => object.y = parentRect.height / 2 - object.height / 2
+    if(opts?.axis) {
+      if(opts.axis === 'x') {
+        centerX();
+      } else if (opts.axis === 'y') {
+        centerY();
+      }
+    } else {
+      centerX();
+      centerY();
+    }
+  }

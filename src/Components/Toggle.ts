@@ -1,7 +1,11 @@
 import color = Mocha.reporters.Base.color;
 import { string2hex } from "../utils";
 
-const ColorTween = require('gotti-color-tween/dist/color-tween.js');
+
+
+import ColorTween from 'gotti-color-tween/dist/color-tween.js';
+console.log('color tween: ', ColorTween);
+
 const circlePadding = 2;
 
 import { ToggleOptions, AnimationType, OutlineOptions, LabelOptions, AnimationOptions, ToggleAnimationExclusions } from "../types";

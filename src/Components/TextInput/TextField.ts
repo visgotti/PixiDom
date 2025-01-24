@@ -57,7 +57,7 @@ const defaultStyleOptions = function() : StyleOptionsParams {
 
 const lengthFieldsToValidate = ["width", "height", "cursorHeight"];
 
-class TextField extends PIXI.Container {
+class TextFieldClass extends PIXI.Container {
     private styleOptions: StyleOptions = {} as StyleOptions;
     private cursorSprite: PIXI.Graphics = new PIXI.Graphics();
     private textbox: PIXI.Graphics = new PIXI.Graphics();
@@ -650,5 +650,5 @@ class TextField extends PIXI.Container {
         this.visible = false;
     }
 }
-
-export default KeyboardHandlerMixin(TextField);
+const TextField = KeyboardHandlerMixin(TextFieldClass);
+export { TextField } 

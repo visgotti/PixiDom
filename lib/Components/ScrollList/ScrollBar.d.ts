@@ -1,5 +1,5 @@
 import { PixiElement } from '../../Element';
-import { ScrollList } from "./ScrollList";
+import { ScrollList } from './ScrollList';
 export type SideScrollOptions = {
     width: number;
     height: number;
@@ -31,3 +31,4 @@ export declare class ScrollBar extends PixiElement {
     private registerScrollerEvents;
     private emitScroll;
 }
+//# sourceMappingURL=ScrollBar.d.ts.map

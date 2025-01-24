@@ -1,13 +1,16 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
+    "outDir": "./lib",
+    "rootDir": "./src",
+    "baseUrl": ".",
     "module": "commonjs",
-    "lib": ["es6", "dom"],
+    "lib": ["dom", "es2016"],
     "target": "es2015",
+    "declarationMap": true,
     "declaration": true,
     "noImplicitAny": false,
     "sourceMap": true,
-    "types": ["node", "mocha", "pixi.js"],
+    "types": [ "mocha", "pixi.js"],
     "moduleResolution": "node"
   },
   "include": [

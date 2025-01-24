@@ -3,8 +3,7 @@ export type ScrollItemOptions = {
     container: PIXI.Container,
     onClick?: Function,
 }
-
-const tweenFunctions = require('tween-functions');
+import tweenFunctions from 'tween-functions';
 
 import { PixiElement } from "../../Element";
 import { ValidMeasurement } from "../../types";

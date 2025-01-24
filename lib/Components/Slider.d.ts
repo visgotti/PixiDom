@@ -1,4 +1,3 @@
-/// <reference types="pixi.js" />
 type SliderOptions = {
     startingValue: number;
     minValue: number;
@@ -54,8 +53,8 @@ declare class Slider extends PIXI.Container {
     calculateValue(): number;
     redrawCircle(): void;
     redrawBar(): void;
-    redraw(): void;
     offChange(t: (v: number) => void): void;
     onChange(t: (v: number) => void): void;
 }
 export { Slider, SliderOptions };
+//# sourceMappingURL=Slider.d.ts.map

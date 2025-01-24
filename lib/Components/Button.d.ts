@@ -1,5 +1,4 @@
-/// <reference types="pixi.js" />
-import { PixiElement } from "../Element";
+import { PixiElement } from '../Element';
 export interface ButtonStyleStateOptions {
     width?: number;
     height?: number;
@@ -40,3 +39,4 @@ export declare class Button extends PixiElement {
     private clear;
     get currentStyleState(): ButtonStyleStateOptions;
 }
+//# sourceMappingURL=Button.d.ts.map

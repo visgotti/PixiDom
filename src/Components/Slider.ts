@@ -1,3 +1,4 @@
+import { centerPixiObject } from "../utils";
 
 type SliderOptions = {
   startingValue: number;
@@ -61,7 +62,7 @@ class Slider extends PIXI.Container {
       this.circleRadius = this.options.circleRadius;
 
       this.circleGraphic = new PIXI.Graphics();
-      this.circleGraphic.drawCircle(0, 0, this.circleRadius);
+      this.circleGraphic.drawCircle(0, this.circleRadius, this.circleRadius);
       this.circleGraphic.y = 0;
       this.circleGraphic.buttonMode = true;
       super.addChild(this.circleGraphic);
@@ -208,8 +209,11 @@ class Slider extends PIXI.Container {
 
     this.circleGraphic.lineStyle(circleOutlineWidth, circleOutlineColor, circleOutlineOpacity);
     this.circleGraphic.beginFill(circleColor, circleOpacity);
-    this.circleGraphic.drawCircle(0, 0, circleRadius);
+    this.circleGraphic.drawCircle(0, circleRadius, circleRadius);
     this.circleGraphic.endFill();
+
+    // position circle to be centered on y axis by the options height
+    centerPixiObject(this.circleGraphic, { axis: 'y', parent: { height: this.options.height } });
 }
 
 redrawBar() {

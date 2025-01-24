@@ -72,7 +72,7 @@ export class Button extends PixiElement {
         Object.keys(styleOptions).forEach(key => {
             this.styleOptions[key] = styleOptions[key];
         });
-        this.styleOptions.useBitmapText = this.styleOptions.useBitmapText || false;
+        this.styleOptions.useBitmapText = this.styleOptions.useBitmapText ?? false;
         this.redraw();
     }
 

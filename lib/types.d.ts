@@ -107,3 +107,4 @@ export type ToggleOptions = {
     labelOptions?: LabelOptions;
     animationOptions?: AnimationOptions;
 };
+//# sourceMappingURL=types.d.ts.map

@@ -1,4 +1,3 @@
-/// <reference types="pixi.js" />
 export declare class PixiElement extends PIXI.Container {
     isMouseOver: Boolean;
     private elements;
@@ -99,3 +98,4 @@ export declare class PixiElement extends PIXI.Container {
     private repositionSelf;
     repositionChildren(): void;
 }
+//# sourceMappingURL=Element.d.ts.map

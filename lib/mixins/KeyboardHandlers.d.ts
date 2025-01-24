@@ -5,7 +5,6 @@ export default function <TBase extends Constructor>(Base: TBase): {
         copiedText: string;
         textStates: Array<string>;
         currentStateIndex: number;
-        stateInterval: any;
         changeStateIndex(change: any): void;
         registerHandlers(): void;
         unregisterHandlers(): void;
@@ -20,3 +19,4 @@ export default function <TBase extends Constructor>(Base: TBase): {
     };
 } & TBase;
 export {};
+//# sourceMappingURL=KeyboardHandlers.d.ts.map

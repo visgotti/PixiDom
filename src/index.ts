@@ -1,25 +1,33 @@
-import TextField from './Components/TextInput/TextField';
-export { TextField };
+import { TextField } from './Components/TextInput/TextField';
+export * from './Components/TextInput/TextField';
 
+export * from "./Element";
 import { PixiElement } from "./Element";
-export { PixiElement };
 
+export * from "./Components/ScrollList/ScrollList";
 import { ScrollList } from "./Components/ScrollList/ScrollList";
-export { ScrollList };
 
 import { ScrollBar } from "./Components/ScrollList/ScrollBar";
-export { ScrollBar };
+export * from "./Components/ScrollList/ScrollBar";
 
 import { Toggle } from './Components/Toggle';
-export { Toggle };
+export * from './Components/Toggle';
 
 import { Button } from './Components/Button';
-export { Button };
+export * from './Components/Button';
+
 import { Slider } from './Components/Slider';
+export * from './Components/Slider';
 
-export { Slider };
+import { string2hex, centerPixiObject } from "./utils";
 
-import { string2hex } from "./utils";
+const utils = {
+    centerPixiObject,
+    string2hex
+}
+export { utils }
+
+export * from './types';
 
 if(PIXI !== undefined) {
     PIXI['Slider'] = PIXI['Slider'] || Slider;
@@ -32,5 +40,6 @@ if(PIXI !== undefined) {
     if(PIXI.utils && !PIXI.utils['string2hex']) {
         PIXI.utils['string2hex'] = string2hex;
     }
+    PIXI.utils['centerObject'] = centerPixiObject;
 }
 

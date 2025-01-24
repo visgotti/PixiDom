@@ -1,10 +1,10 @@
+import { ValidMeasurement } from '../../types';
+import { ScrollBarStyleOptions } from './ScrollBar';
+import { DestroyOptions } from 'pixi.js';
 export type ScrollItemOptions = {
     container: PIXI.Container;
     onClick?: Function;
 };
-import { ValidMeasurement } from "../../types";
-import { ScrollBarStyleOptions } from './ScrollBar';
-import { DestroyOptions } from "pixi.js";
 export type ScrollStyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
@@ -89,3 +89,4 @@ export declare class ScrollList extends PIXI.Container {
     private findOptionAtPoint;
     private recurseChildren;
 }
+//# sourceMappingURL=ScrollList.d.ts.map

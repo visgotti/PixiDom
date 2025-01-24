@@ -1,6 +1,5 @@
-/// <reference types="pixi.js" />
-import { ValidMeasurement } from "../../types";
-export declare type StyleOptions = {
+import { ValidMeasurement } from '../../types';
+export type StyleOptions = {
     width?: ValidMeasurement;
     height?: ValidMeasurement;
     cursorHeight: ValidMeasurement;
@@ -16,7 +15,7 @@ export declare type StyleOptions = {
     xPadding: number;
     yPadding: number;
 };
-export declare type StyleOptionsParams = {
+export type StyleOptionsParams = {
     width?: number | string;
     height?: number | string;
     borderWidth?: number;
@@ -32,7 +31,7 @@ export declare type StyleOptionsParams = {
     xPadding?: number;
     yPadding?: number;
 };
-declare class TextField extends PIXI.Container {
+declare class TextFieldClass extends PIXI.Container {
     private styleOptions;
     private cursorSprite;
     private textbox;
@@ -95,24 +94,25 @@ declare class TextField extends PIXI.Container {
     submit(): void;
     focus(): void;
     blur(): void;
-    maxCharacterLength: number;
+    set maxCharacterLength(value: number);
     change(value: any): boolean;
     private startCursorAnimation;
     private stopCursorAnimation;
     private blinkCursor;
     private checkForOutsideClick;
-    text: string;
-    visible: any;
+    get text(): string;
+    set text(value: string);
+    set visible(value: boolean);
+    get visible(): boolean;
     show(): void;
     hide(): void;
 }
-declare const _default: {
+declare const TextField: {
     new (...args: any[]): {
         [x: string]: any;
         copiedText: string;
-        textStates: string[];
+        textStates: Array<string>;
         currentStateIndex: number;
-        stateInterval: any;
         changeStateIndex(change: any): void;
         registerHandlers(): void;
         unregisterHandlers(): void;
@@ -125,5 +125,6 @@ declare const _default: {
         onKeyPress(event: any): void;
         addState(newText: any): void;
     };
-} & typeof TextField;
-export default _default;
+} & typeof TextFieldClass;
+export { TextField };
+//# sourceMappingURL=TextField.d.ts.map

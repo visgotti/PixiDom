@@ -1,5 +1,4 @@
-/// <reference types="pixi.js" />
-import { ToggleOptions } from "../types";
+import { ToggleOptions } from '../types';
 export declare class Toggle extends PIXI.Container {
     private _toggled;
     private backgroundGraphic;
@@ -38,3 +37,4 @@ export declare class Toggle extends PIXI.Container {
     private _showOnText;
     private _showOffText;
 }
+//# sourceMappingURL=Toggle.d.ts.map

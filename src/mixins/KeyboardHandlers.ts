@@ -6,7 +6,6 @@ export default function <TBase extends Constructor>(Base: TBase){
         public copiedText: string = '';
         public textStates: Array<string> = [];
         public currentStateIndex: number = -1;
-        private stateInterval: any;
 
         constructor(...args: any[]) {
             super(...args);
@@ -20,8 +19,6 @@ export default function <TBase extends Constructor>(Base: TBase){
 
             super.on('focus', this.registerHandlers);
             super.on('blur', this.unregisterHandlers);
-
-            this.stateInterval = null;
         }
 
         public changeStateIndex(change) {
