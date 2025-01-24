@@ -1,3 +1,4 @@
+import { IKeyboardBase } from '../../mixins/KeyboardHandlers';
 import { ValidMeasurement } from '../../types';
 export type StyleOptions = {
     width?: ValidMeasurement;
@@ -31,7 +32,7 @@ export type StyleOptionsParams = {
     xPadding?: number;
     yPadding?: number;
 };
-declare class TextFieldClass extends PIXI.Container {
+declare class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private styleOptions;
     private cursorSprite;
     private textbox;
@@ -52,8 +53,8 @@ declare class TextFieldClass extends PIXI.Container {
     private dragIndexStart;
     private dragIndexEnd;
     private inDrag;
-    submitKeyCodes: Array<number>;
-    ignoreKeys: Array<number>;
+    submitKeyCodes: Array<number | string>;
+    ignoreKeys: Array<number | string>;
     _maxCharacterLength: number;
     private onFocusHandler;
     private onBlurHandler;
@@ -74,17 +75,30 @@ declare class TextFieldClass extends PIXI.Container {
     private handleRangeChange;
     private handleRangeFinish;
     private getCursorXFromIndex;
-    private moveCursor;
+    setCursor(index: number): void;
+    moveCursor(indexChange: number): void;
     private getCursorIndexFromX;
-    private getSelectedChars;
-    private replaceSelectedWith;
-    private getSelectedRangeIndexes;
-    private getSelectedRange;
+    getSelectedChars(): string;
+    replaceSelectedWith(replaceWith: any): string;
+    getSelectedRangeIndexes(): {
+        start: number;
+        end: number;
+    };
+    getSelectedRange(): {
+        indexes: {
+            start: number;
+            end: number;
+        };
+        x: {
+            start: number;
+            end: number;
+        };
+    };
     selectAll(): void;
     private setSelectedRange;
     private charFromPosition;
-    private removeLeftOfCursor;
-    private removeRightOfCursor;
+    removeLeftOfCursor(): void;
+    removeRightOfCursor(): void;
     onCharLimit(handler: any): void;
     onChange(handler: any): void;
     onFocus(handler: any): void;
@@ -95,6 +109,7 @@ declare class TextFieldClass extends PIXI.Container {
     focus(): void;
     blur(): void;
     set maxCharacterLength(value: number);
+    private _change;
     change(value: any): boolean;
     private startCursorAnimation;
     private stopCursorAnimation;
@@ -109,7 +124,6 @@ declare class TextFieldClass extends PIXI.Container {
 }
 declare const TextField: {
     new (...args: any[]): {
-        [x: string]: any;
         copiedText: string;
         textStates: Array<string>;
         currentStateIndex: number;
@@ -121,10 +135,34 @@ declare const TextField: {
         onCut(event: any): void;
         onBackspace(): void;
         onDelete(): void;
-        onKeyDown(event: any): void;
-        onKeyPress(event: any): void;
+        onKeyDown(event: Pick<KeyboardEvent, "keyCode" | "which" | "ctrlKey" | "metaKey" | "shiftKey" | "preventDefault" | "code">): void;
+        onKeyPress(event: Pick<KeyboardEvent, "keyCode" | "which" | "key" | "ctrlKey" | "metaKey" | "shiftKey" | "preventDefault" | "code">): void;
         addState(newText: any): void;
+        ignoreKeys: Array<number | string>;
+        submitKeyCodes: Array<number | string>;
+        on: (event: string, handler: (event: any) => void) => void;
+        off: (event: string, handler: (event: any) => void) => void;
+        change: (text: string) => void;
+        replaceSelectedWith: (text: string) => string;
+        getSelectedChars: () => string;
+        setCursor: (n: number) => void;
+        moveCursor: (n: number) => void;
+        removeLeftOfCursor: () => void;
+        removeRightOfCursor: () => void;
+        selectAll: () => void;
+        submit: () => void;
+        getSelectedRange: () => ({
+            indexes: {
+                start: number;
+                end: number;
+            };
+            x: {
+                start: number;
+                end: number;
+            };
+        } | null);
     };
 } & typeof TextFieldClass;
+export type TextField = InstanceType<typeof TextField>;
 export { TextField };
 //# sourceMappingURL=TextField.d.ts.map

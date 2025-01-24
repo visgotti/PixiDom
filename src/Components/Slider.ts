@@ -67,8 +67,6 @@ class Slider extends PIXI.Container {
       this.circleGraphic.buttonMode = true;
       super.addChild(this.circleGraphic);
       this.circleGraphic.interactive = true;
-      console.log(this.options.maxValue - this.options.minValue);
-
 
       const e = (this.currentValue - this.options.minValue) / (this.options.maxValue - this.options.minValue);
       this.circleGraphic.x = e * this.options.width;

@@ -1,5 +1,5 @@
 import { parseLengthMeasurements } from "../../utils";
-import KeyboardHandlerMixin from "../../mixins/KeyboardHandlers";
+import KeyboardHandlerMixin, { IKeyboardBase } from "../../mixins/KeyboardHandlers";
 import { ValidMeasurement } from "../../types";
 
 export type StyleOptions = {
@@ -57,7 +57,7 @@ const defaultStyleOptions = function() : StyleOptionsParams {
 
 const lengthFieldsToValidate = ["width", "height", "cursorHeight"];
 
-class TextFieldClass extends PIXI.Container {
+class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private styleOptions: StyleOptions = {} as StyleOptions;
     private cursorSprite: PIXI.Graphics = new PIXI.Graphics();
     private textbox: PIXI.Graphics = new PIXI.Graphics();
@@ -85,8 +85,8 @@ class TextFieldClass extends PIXI.Container {
     private dragIndexEnd: number = 0;
     private inDrag: boolean = false;
 
-    public submitKeyCodes: Array<number> = [13];
-    public ignoreKeys: Array<number> = [];
+    public submitKeyCodes: Array<number | string> = [13, "Enter"];
+    public ignoreKeys: Array<number | string> = [];
     public _maxCharacterLength: number = null;
 
     private onFocusHandler: Function = () => {};
@@ -370,7 +370,15 @@ class TextFieldClass extends PIXI.Container {
         return leftChar.x + leftChar.width + 1 + this.styleOptions.xPadding;
     }
 
-    private moveCursor(indexChange) {
+    public setCursor(index: number) {
+        if(index > -1 && index <= this.text.length) {
+            this.cursorIndex = index;
+            this.clearRange();
+            this.redraw();
+        }
+    }
+
+    public moveCursor(indexChange: number) {
         const newCursorIndex = this.cursorIndex + indexChange;
         if(newCursorIndex > -1 && newCursorIndex <= this.text.length) {
             this.cursorIndex = newCursorIndex;
@@ -379,7 +387,7 @@ class TextFieldClass extends PIXI.Container {
         }
     }
 
-    private getCursorIndexFromX(x) : number {
+    private getCursorIndexFromX(x: number) : number {
         x += this.overflowOffsetX;
 
         if(x <= 0) {
@@ -400,7 +408,7 @@ class TextFieldClass extends PIXI.Container {
         return this.textSprite.children.length;
     }
 
-    private getSelectedChars() {
+    public getSelectedChars() {
         const range = this.getSelectedRange();
         if(!range) return "";
 
@@ -409,7 +417,7 @@ class TextFieldClass extends PIXI.Container {
          return this.text.substr(start, end - start);
     }
 
-    private replaceSelectedWith(replaceWith) : string {
+    public replaceSelectedWith(replaceWith) : string {
         const replaceWithArray = replaceWith.split('');
         
         const replacedLength = replaceWithArray.length;
@@ -428,7 +436,7 @@ class TextFieldClass extends PIXI.Container {
         const deleteCount = end - start;
 
         textArray.splice(start, deleteCount, ...replaceWithArray);
-        if(this.change(textArray.join(''))) {
+        if(this._change(textArray.join(''))) {
             this.cursorIndex = start + replacedLength;
             this.clearRange();
             this.redraw();
@@ -438,7 +446,7 @@ class TextFieldClass extends PIXI.Container {
         }
     }
 
-    private getSelectedRangeIndexes() : {
+    public getSelectedRangeIndexes() : {
         start: number,
         end: number
     } {
@@ -449,7 +457,7 @@ class TextFieldClass extends PIXI.Container {
         return { start: range.indexes.start, end: range.indexes.end };
     }
 
-    private getSelectedRange() : {
+    public getSelectedRange() : {
             indexes:
                 { start: number, end: number },
             x:
@@ -485,21 +493,21 @@ class TextFieldClass extends PIXI.Container {
         return { left: null, right: null };
     }
 
-    private removeLeftOfCursor() {
+    public removeLeftOfCursor() {
         if(this.cursorIndex > 0) {
             const array = this.text.split('');
             array.splice(this.cursorIndex - 1, 1);
             this.cursorIndex--;
-            this.change(array.join(''));
+            this._change(array.join(''));
             this.redraw();
         }
     }
 
-    private removeRightOfCursor() {
+    public removeRightOfCursor() {
         const array = this.text.split('');
         if(array.length && this.cursorIndex < array.length) {
             array.splice(this.cursorIndex, 1);
-            this.change(array.join(''));
+            this._change(array.join(''));
             this.redraw();
         }
     }
@@ -564,7 +572,7 @@ class TextFieldClass extends PIXI.Container {
         }
     }
 
-    public change(value) : boolean {
+    private _change(value: string) {
         if(value !== this.text) {
             if(this._maxCharacterLength !== null && value.length > this._maxCharacterLength) {
                 this.onCharLimitHandler(value);
@@ -577,13 +585,22 @@ class TextFieldClass extends PIXI.Container {
                         this.textSprite.removeChild(child);
                     })
                 }
-                this.textSprite.updateTransform();
+                
+                this.textSprite.updateTransform();                   
                 this.emit('change', value);
                 this.onChangeHandler(value);
                 return true;
             }
         }
         return false;
+    }
+
+    public change(value) : boolean {
+        const c = this._change(value);
+        if(c) {
+            this.redrawText();
+        }
+        return c;
     }
 
     private startCursorAnimation() {
@@ -650,5 +667,8 @@ class TextFieldClass extends PIXI.Container {
         this.visible = false;
     }
 }
-const TextField = KeyboardHandlerMixin(TextFieldClass);
+
+const TextField = KeyboardHandlerMixin(TextFieldClass)
+export type TextField = InstanceType<typeof TextField>;
+
 export { TextField } 

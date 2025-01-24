@@ -4,7 +4,6 @@ import { string2hex } from "../utils";
 
 
 import ColorTween from 'gotti-color-tween/dist/color-tween.js';
-console.log('color tween: ', ColorTween);
 
 const circlePadding = 2;
 

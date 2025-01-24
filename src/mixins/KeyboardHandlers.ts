@@ -1,4 +1,25 @@
-type Constructor<T = any> = new (...args: any[]) => T;
+export type IKeyboardBase = {
+    ignoreKeys: Array<number | string>;
+    submitKeyCodes: Array<number | string>;
+    on: (event: string, handler: (event: any) => void) => void;
+    off: (event: string, handler: (event: any) => void) => void;
+    change: (text: string) => void;
+    replaceSelectedWith: (text: string) => string; 
+    getSelectedChars: () => string;
+    setCursor: (n: number) => void;
+    moveCursor: (n: number) => void;
+    removeLeftOfCursor: () => void;
+    removeRightOfCursor: () => void;
+    selectAll: () => void;
+    submit: () => void;
+    getSelectedRange: () =>  ({
+        indexes:
+            { start: number, end: number },
+        x:
+            { start: number, end: number }
+    } | null)
+}
+type Constructor<T = IKeyboardBase> = new (...args: any[]) => T;
 
 export default function <TBase extends Constructor>(Base: TBase){
     return class KeyboardHandledInput extends Base {
@@ -77,47 +98,119 @@ export default function <TBase extends Constructor>(Base: TBase){
         public onBackspace(){};
         public onDelete(){};
 
-        public onKeyDown(event) {
-            const code = event.keyCode ? event.keyCode : event.code;
-            if(this.submitKeyCodes.includes(code)) {
+        public onKeyDown(event: Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>) {
+            const code = event.keyCode ?? event.which;
+            const key = event.code;
+            if(this.submitKeyCodes.includes(code) || this.submitKeyCodes.includes(key)) {
                 super.submit();
-            } else if (code == 37) { // left
-                super.moveCursor(-1)
-            } else if (code == 39) { // right
-                super.moveCursor(1)
-            } else if(code == 8) { // backspace
+            } else if (code == 37 || key === "ArrowLeft") { // left
+                const indexes = super.getSelectedRange()?.indexes;
+
+                if(!indexes) {
+                    super.moveCursor(-1)
+                } else {
+                    super.setCursor(indexes.start);
+                }
+            } else if (code == 39 || key === "ArrowRight") { // right
+                const indexes = super.getSelectedRange()?.indexes;
+                if(!indexes) {
+                    super.moveCursor(1)
+                } else {
+                    super.setCursor(indexes.end);
+                }
+            } else if(code == 8 || key === "Backspace") { // backspace
                 if(super.getSelectedRange()) {
                     super.replaceSelectedWith("");
                 } else {
                     super.removeLeftOfCursor();
                 }
-            } else if (code == 46) { //delete
+            } else if (code == 46 || key === "Delete") { //delete
                 if(super.getSelectedRange()) {
                     super.replaceSelectedWith("");
                 } else {
                     super.removeRightOfCursor();
                 }
-            } else if(event.ctrlKey) {
-                if(code == 90) { // z
+            } else if(event.ctrlKey || event.metaKey) {
+                if(code == 90 || key === "KeyZ") { // z
                     const indexChange = event.shiftKey ? 1 : -1; // if shift is pressed we want to do redo behavior
                     this.changeStateIndex(indexChange);
-                } else if(code == 65) { // a
+                } else if(code == 65 || key === "KeyA") { // a
                     event.preventDefault();
                     super.selectAll();
                 }
             }
         }
 
-        public onKeyPress(event) {
-            const code = event.keyCode ? event.keyCode : event.which;
-            if(this.submitKeyCodes.includes(code) || this.ignoreKeys.includes(code)) {
+        
+        public onKeyPress(event: Pick<KeyboardEvent, 'keyCode' | 'which' | 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>) {
+            const code = event.keyCode ?? event.which;
+            const key = event.code;
+            if(this.submitKeyCodes.includes(code) || this.submitKeyCodes.includes(key) || this.ignoreKeys.includes(code) || this.ignoreKeys.includes(key) || event.ctrlKey || event.metaKey) {
                 return;
             }
-            const char = String.fromCharCode(code);
-            if(char) {
-                if(!event.ctrlKey) {
+            if(code !== null && code !== undefined) {
+                const char = String.fromCharCode(code);
+                if(char) {
                     event.preventDefault();
                     super.replaceSelectedWith(char);
+                }
+            } else if (key) {
+                const emptyStringKeys = [
+                    "Backspace",
+                    "Tab",
+                    "Alt",
+                    "Pause",
+                    "CapsLock",
+                    "Escape",
+                    "Space",
+                    "PageUp",
+                    "PageDown",
+                    "End",
+                    "Home",
+                    "ArrowLeft",
+                    "ArrowUp",
+                    "ArrowRight",
+                    "ArrowDown",
+                    "Insert",
+                    "Delete",
+                    "ContextMenu",
+                    "NumLock",
+                    "ScrollLock",
+                    "PrintScreen",
+                    "F1",
+                    "F2",
+                    "F3",
+                    "F4",
+                    "F5",
+                    "F6",
+                    "F7",
+                    "F8",
+                    "F9",
+                    "F10",
+                    "F11",
+                    "F12"
+                  ];
+                
+                if(emptyStringKeys.includes(key)) {
+                    event.preventDefault();
+                    super.replaceSelectedWith('');
+                } else {
+                    if(event.key && event.key.length === 1) {
+                        event.preventDefault();
+                        super.replaceSelectedWith(event.key);
+                    }
+                }
+                    
+                if (key === "Backspace") {
+                } else if (key === "Delete") {
+                    event.preventDefault();
+                    super.replaceSelectedWith('');
+                } else if (key && key.length === 1) {
+                    // Handle printable characters from `key`
+                    if (!event.ctrlKey && !event.metaKey) {
+                        event.preventDefault();
+                        super.replaceSelectedWith(key); // Insert the character
+                    }
                 }
             }
         }

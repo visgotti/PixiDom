@@ -1,6 +1,6 @@
 {
   "name": "pixidom.js",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Simple to use lib that immitates dom elements in pixi.js",
   "scripts": {
     "dev": "vite",
