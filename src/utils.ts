@@ -1,54 +1,138 @@
+import type { ParsedMeasurement, PixiRectLike, ValidMeasurement } from "./types";
+
 Number.isNaN = Number.isNaN || function(value) {
     return typeof value === "number" && isNaN(value);
 }
 
-type ParsedMeasurement = {
-    valid: boolean,
-    error?: string,
-    value?: number,
-    type?: string, // percent or pixel
-}
+export const parseLengthMeasurements = function(measurement: ValidMeasurement): ParsedMeasurement {
+    // Handle null or undefined
+    if (measurement == null) {
+        return {
+            valid: false,
+            error: 'Measurement cannot be null or undefined'
+        };
+    }
 
-export const parseLengthMeasurements = function(measurement) : ParsedMeasurement {
-    let value: number;
-    if(!isNaN(measurement) && measurement != null) {
+    // Handle number type
+    if (typeof measurement === 'number') {
+        if (isNaN(measurement)) {
+            return {
+                valid: false,
+                error: 'Invalid number value'
+            };
+        }
+        
+        if (measurement < 0) {
+            return {
+                valid: false,
+                error: 'Cannot have negative length value'
+            };
+        }
+        
         return {
             valid: true,
             type: 'pixel',
             value: measurement
+        };
+    }
+
+    // Handle object type
+    if (typeof measurement === 'object' && 'value' in measurement && 'type' in measurement) {
+        const { value, type } = measurement;
+        
+        if (isNaN(value) || value < 0) {
+            return {
+                valid: false,
+                error: 'Invalid or negative value in object'
+            };
+        }
+
+        if (type === 'px' || type === 'pixel' || type === 'pixels') {
+            return {
+                valid: true,
+                type: 'pixel',
+                value
+            };
+        } else if (type === '%' || type === 'percent') {
+            return {
+                valid: true,
+                type: 'percent',
+                value
+            };
+        } else {
+            return {
+                valid: false,
+                error: 'Invalid measurement type. Must be px, pixel, pixels, % or percent'
+            };
         }
     }
+
+    // Handle string type
     try {
-        const last2 = measurement.toString().slice(-2);
-        if(last2.charAt(1) === '%') {
-            value = parseInt(measurement.slice(0, -1));
-            if(Number.isNaN(value)) {
-                throw new Error('Did not find a number in front of % sign')
-            } else {
+        const strMeasurement = String(measurement);
+        
+        // Check for percentage
+        if (strMeasurement.endsWith('%')) {
+            const value = parseFloat(strMeasurement.slice(0, -1));
+            if (isNaN(value)) {
                 return {
-                    valid: true,
-                    value,
-                    type: 'percent'
-                }
+                    valid: false,
+                    error: 'Did not find a valid number in front of % sign'
+                };
             }
-        } else if (last2 === 'px') {
-            value = parseInt(measurement.slice(0, -2));
-            if(Number.isNaN(value)) {
-                throw new Error('Did not find a number in front of px')
-            } else if(value < 0) {
-                throw new Error('Can not have negative pixel length value')
-            } else {
+            return {
+                valid: true,
+                value,
+                type: 'percent'
+            };
+        } 
+        // Check for pixel values
+        else if (strMeasurement.endsWith('px')) {
+            const value = parseFloat(strMeasurement.slice(0, -2));
+            if (isNaN(value)) {
+                return {
+                    valid: false,
+                    error: 'Did not find a valid number in front of px'
+                };
+            }
+            if (value < 0) {
+                return {
+                    valid: false,
+                    error: 'Cannot have negative pixel length value'
+                };
+            }
+            return {
+                valid: true,
+                value,
+                type: 'pixel'
+            };
+        } 
+        // Try to parse as number
+        else {
+            const value = parseFloat(strMeasurement);
+            if (!isNaN(value)) {
+                if (value < 0) {
+                    return {
+                        valid: false,
+                        error: 'Cannot have negative length value'
+                    };
+                }
                 return {
                     valid: true,
                     value,
                     type: 'pixel'
-                }
+                };
             }
-        } else {
-            throw new Error('Length values must either be in % or px');
+            return {
+                valid: false,
+                error: 'Length values must either be in %, px, or a valid number'
+            };
         }
-    } catch(err) {
-        return { valid: false, error: err.message }
+    } catch (err) {
+        return { 
+            valid: false, 
+            error: err instanceof Error ? err.message : 'Unknown error parsing measurement' 
+        };
     }
 }
 
@@ -56,19 +140,12 @@ export function clamp(num, min, max) {
     return num <= min ? min : num >= max ? max : num;
 }
 
-export function string2hex(string) {
-    if (typeof string === 'string' && string[0] === '#')
-    {
-        string = string.substr(1);
-    }
-    return parseInt(string, 16);
+export function string2hex(string: string): number {
+  return parseInt(string.replace('#', ''), 16);
 }
 
-
-type PixiRectLike = { x: number, y: number, width: number, height: number, parent?: { width: number, height: number } }
-
-
 export function centerPixiObject(object: PixiRectLike, opts: { axis: 'y', parent?: { height: number } })
+export function centerPixiObject(object: PixiRectLike, opts: { axis: 'x', parent?: { width: number } })
 export function centerPixiObject(object: PixiRectLike, opts: { axis?: 'x' | 'y', parent?: { width?: number, height?: number } }) {
     if(!object.parent && !opts?.parent) throw new Error(`No parent`);
     const parentRect : { width?: number, height?: number } = opts?.parent || object.parent;

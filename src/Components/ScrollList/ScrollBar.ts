@@ -56,7 +56,6 @@ export class ScrollBar extends PixiElement {
     }
 
     public setScrollPercent(n: number) {
-        console.error('set', n)
         const utilizedSpaceForPercent = this.visibleLength - this.scroller.height;
         const y = utilizedSpaceForPercent * n;
         this.scroller.y = y;

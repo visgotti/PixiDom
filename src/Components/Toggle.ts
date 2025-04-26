@@ -1,11 +1,8 @@
-import color = Mocha.reporters.Base.color;
 import { string2hex } from "../utils";
 
+import { ColorTween } from '../tween/colorTween';
 
-
-import ColorTween from 'gotti-color-tween/dist/color-tween.js';
-
-const circlePadding = 2;
+const DEFAULT_CIRCLE_PADDING = 2;
 
 import { ToggleOptions, AnimationType, OutlineOptions, LabelOptions, AnimationOptions, ToggleAnimationExclusions } from "../types";
 
@@ -34,9 +31,11 @@ export class Toggle extends PIXI.Container {
     private circleColorsArrayIndex: number = null;
 
     private toggleCircleTravelDistance: number = 0;
+    private circlePadding: number = DEFAULT_CIRCLE_PADDING;
 
     constructor(options: ToggleOptions, isToggled?: boolean) {
         super();
+        this.circlePadding = options.circlePadding ?? DEFAULT_CIRCLE_PADDING;
         this.options = options;
         this.backgroundGraphic = new PIXI.Graphics();
         const borderRadius = options.borderRadius ? options.borderRadius : 50;
@@ -58,7 +57,7 @@ export class Toggle extends PIXI.Container {
 
             const offXDiff = (options.width / 2) - this.offText.width;
             if(offXDiff < 0) {throw new Error('Label for off text was too long')}
-            this.offText.x = ((options.width / 2)  + offXDiff / 2) - circlePadding;
+            this.offText.x = ((options.width / 2)  + offXDiff / 2) - this.circlePadding;
             this.offText.tint = offColor;
 
             const offYDiff = options.height - this.offText.height;
@@ -67,7 +66,7 @@ export class Toggle extends PIXI.Container {
 
             const onXDiff = (options.width / 2) - this.onText.width;
             if(onXDiff < 0) {throw new Error('Label for on text was too long')}
-            this.onText.x = circlePadding + onXDiff / 2;
+            this.onText.x = this.circlePadding + onXDiff / 2;
             this.onText.tint = onColor;
 
             const onYDiff = options.height - this.onText.height;
@@ -76,15 +75,15 @@ export class Toggle extends PIXI.Container {
             this.usingLabels = true;
         }
 
-        this.circleRadius = (this.options.height / 2) - circlePadding;
+        this.circleRadius = (this.options.height / 2) - this.circlePadding;
         this.circleGraphic = new PIXI.Graphics();
         this.circleGraphic.drawCircle(0, 0, this.circleRadius);
 
-        this.circleGraphic.y = circlePadding;
+        this.circleGraphic.y = this.circlePadding;
 
         this.addChild(this.circleGraphic);
 
-        this.toggleCircleTravelDistance = Math.abs((circlePadding) -  (this.options.width - this.circleGraphic.width - circlePadding));
+        this.toggleCircleTravelDistance = Math.abs((this.circlePadding) -  (this.options.width - this.circleGraphic.width - this.circlePadding));
 
         this.interactive = true;
         this.buttonMode = true;
@@ -121,7 +120,7 @@ export class Toggle extends PIXI.Container {
     }
 
     get travelToX() {
-        return this.toggled ? circlePadding : this.options.width - this.circleGraphic.width - circlePadding;
+        return this.toggled ? this.circlePadding : this.options.width - this.circleGraphic.width - this.circlePadding;
     }
 
     set toggled(val) {
@@ -221,12 +220,12 @@ export class Toggle extends PIXI.Container {
 
         if(this._toggled) {
             backgroundColor = this.options.onBackgroundColor;
-            xPosition = this.options.width - this.circleGraphic.width - circlePadding;
+            xPosition = this.options.width - this.circleGraphic.width - this.circlePadding;
             circleColor =  this.options.onCircleColor;
             this._showOnText();
         } else {
             backgroundColor =  this.options.offBackgroundColor;
-            xPosition =  0 + circlePadding;
+            xPosition =  0 + this.circlePadding;
             circleColor = this.options.offCircleColor;
             this._showOffText();
         }

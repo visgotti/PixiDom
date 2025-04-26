@@ -1,9 +1,19 @@
 export const GLOBAL_PIXI_DTA_PROPERTY_KEY = "__pixi-dom-dynamic-texture-atlas";
+export type PixiRectLike = { x: number, y: number, width: number, height: number, parent?: { width: number, height: number } }
+
+type MeasurementUnit = 'px' | '%' | 'percent' | 'pixel' | 'pixels'
+
+export type ParsedMeasurement = {
+  valid: boolean,
+  error?: string,
+  value?: number,
+  type?: 'percent' | 'pixel'
+}
 
 export type ValidMeasurement = {
     value: number,
-    type: string, // percent or pixel
-}
+    type: MeasurementUnit
+} | number | string
 
 export type FlexOptions = {
     flexDirection?: FlexDirection,
@@ -119,4 +129,5 @@ export type ToggleOptions = {
     backgroundOutline?: OutlineOptions,
     labelOptions?: LabelOptions,
     animationOptions?: AnimationOptions,
+    circlePadding?: number,
 }

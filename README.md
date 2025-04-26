@@ -1,7 +1,33 @@
 # Pixi Dom
-Starting a library with pixi interface elements
+Library pixi containers extended with specific functionality somewhat mimicking the DOM
 
-# examples folder is best place to look 
+# examples folder is best place to look
+
+## ScrollList
+```js
+const scrollList = new PIXI.ScrollList({
+  width: 300,
+  height: 100,
+  backgroundColor: 0xFF0000,
+  dividerColor: 0xFF0000,
+  dividerPixelHeight: 1,
+  dividerPercentWidth: 0.1,
+  dividerTopPadding: 0,
+  dividerBottomPadding: 0,
+  borderOpacity: 0.5,
+  xPadding: 0,
+  yPadding: 0,
+}, []);
+
+for(let i = 0; i < 100; i++) {
+  scrollList.addScrollItem(new PIXI.Text(`item_${i}_a`, { font: '24px Arial', fill: 0xffffff, align: 'center' })); 
+    // or can do addScrollItems and pass in an array.
+  scrollList.addScrollItems([
+    new PIXI.Text(`item_${i}_b1`, { font: '24px Arial', fill: 0xffffff, align: 'center' }),
+    new PIXI.Text(`item_${i}_b2`, { font: '24px Arial', fill: 0xffffff, align: 'center' }),  
+  ]); 
+}
+```
 
 ## Bitmap Font Textfields
 ```js

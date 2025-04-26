@@ -19,6 +19,7 @@ export declare class Toggle extends PIXI.Container {
     private backgroundColorsArrayIndex;
     private circleColorsArrayIndex;
     private toggleCircleTravelDistance;
+    private circlePadding;
     constructor(options: ToggleOptions, isToggled?: boolean);
     get activeBackgroundColor(): number;
     get inactiveBackgroundColor(): number;

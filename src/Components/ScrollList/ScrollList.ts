@@ -9,21 +9,21 @@ import { PixiElement } from "../../Element";
 import { ValidMeasurement } from "../../types";
 
 import {ScrollBar, ScrollBarStyleOptions} from './ScrollBar';
-import {DestroyOptions} from "pixi.js";
+import type {DestroyOptions} from "pixi.js";
 
 export type ScrollStyleOptions = {
-    width?: ValidMeasurement,
-    height?: ValidMeasurement,
-    backgroundColor: number,
-    dividerColor: number,
-    dividerPixelHeight: number,
-    dividerPercentWidth: number,
-    dividerTopPadding: number,
-    dividerBottomPadding: number,
-    borderOpacity: number,
-    xPadding: number,
-    yPadding: number,
-    scrollBarOptions?: ScrollBarStyleOptions,
+  width?: ValidMeasurement,
+  height?: ValidMeasurement,
+  backgroundColor: number,
+  dividerColor: number,
+  dividerPixelHeight: number,
+  dividerPercentWidth: number,
+  dividerTopPadding: number,
+  dividerBottomPadding: number,
+  borderOpacity: number,
+  xPadding: number,
+  yPadding: number,
+  scrollBarOptions?: ScrollBarStyleOptions,
 }
 
 export type ScrolllPerformanceOptions = {
@@ -457,7 +457,7 @@ export class ScrollList extends PIXI.Container {
         return this._currentScroll;
     }
 
-    public addScrollItems(containers: Array<PIXI.Container>) {
+    public addScrollItems(containers: Array<PIXI.Container | PIXI.Sprite | PIXI.Graphics | PIXI.Text>) {
         containers.forEach(c => {
             c['just_added'] = true;
             c.visible = true;
@@ -472,7 +472,7 @@ export class ScrollList extends PIXI.Container {
         this.adjustVisibility(null, true);
         this.redraw();
     }
-    public addScrollItem(container: PIXI.Container) {
+    public addScrollItem(container: PIXI.Container | PIXI.Sprite | PIXI.Graphics | PIXI.Text) {
         this.addScrollItems([container])
     }
 

@@ -180,8 +180,12 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
         this.cursorSprite.lineStyle(this.styleOptions.cursorWidth, this.styleOptions.cursorColor);
 
-        const { value, type } = this.styleOptions.cursorHeight;
 
+        const { value, type, error } = parseLengthMeasurements(this.styleOptions.cursorHeight);
+        if(error) {
+            throw new Error(`Error for passed in style: cursorHeight, ${error}`)
+        } 
+        
         const cursorHeight = type === "pixel" ? value : Math.round(this.textbox.height * (value/100));
 
         const min = Math.min(this.textbox.height, cursorHeight);
@@ -209,7 +213,7 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
         const currentCursorX = this.getCursorXFromIndex(this.dragIndexEnd);
 
-        const { value, type } = this.styleOptions.width;
+        const { value, type } = parseLengthMeasurements(this.styleOptions.width);
         const totalWidth = window.innerWidth;
         const maxWidth = type === 'pixel' ? value : totalWidth * (value/100);
 
@@ -259,13 +263,13 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
             this.textbox.lineStyle(this.styleOptions.borderWidth, this.styleOptions.borderColor, this.styleOptions.borderOpacity)
         }
 
-        let { value, type } = this.styleOptions.height;
+        let { value, type } = parseLengthMeasurements(this.styleOptions.height);
 
         const totalWidth = window.innerWidth;
         const totalHeight = window.innerHeight;
 
         const height = type === 'pixel' ? value : totalHeight * (value/100);
-        ({ value, type } = this.styleOptions.width);
+        ({ value, type } = parseLengthMeasurements(this.styleOptions.width));
         const maxWidth = type === 'pixel' ? value : totalWidth * (value/100);
 
         const range = this.getSelectedRange();

@@ -1,14 +1,24 @@
 {
   "name": "pixidom.js",
-  "version": "0.0.9",
-  "description": "Simple to use lib that immitates dom elements in pixi.js",
+  "version": "0.1.0",
+  "description": "Library pixi containers extended with specific functionality somewhat mimicking the DOM",
+  "keywords": [
+    "pixi",
+    "pixijs",
+    "pixi.js",
+    "pixi-dom",
+    "pixidom",
+    "dom",
+    "canvas",
+    "graphics"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
     "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit"
   },
-  "main": "lib/pixidom.js",
+  "main": "dist/pixidom.js",
   "module": "lib/pixidom.es.js",
   "types": "lib/index.d.ts",
   "author": "visgotti",
@@ -22,7 +32,7 @@
     "mocha": "^6.1.4",
     "ts-loader": "^6.0.1",
     "ts-node": "^8.1.0",
-    "typescript": "^5.3.3",
+    "typescript": "^5.8.3",
     "vite": "^6.0.11",
     "vite-plugin-dts": "^4.5.0"
   },
@@ -35,7 +45,6 @@
   },
   "homepage": "https://github.com/visgotti/PixiDom#readme",
   "dependencies": {
-    "gotti-color-tween": "^0.1.2",
     "tween-functions": "^1.2.0"
   }
 }
