@@ -19,8 +19,8 @@
     "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit"
   },
   "main": "dist/pixidom.js",
-  "module": "lib/pixidom.es.js",
-  "types": "lib/index.d.ts",
+  "module": "dist/pixidom.es.js",
+  "types": "dist/index.d.ts",
   "author": "visgotti",
   "license": "MIT",
   "devDependencies": {
