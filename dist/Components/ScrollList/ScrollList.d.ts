@@ -48,7 +48,7 @@ export declare class ScrollList extends PIXI.Container {
     private nextItemY;
     private scrollToDest;
     private listContainer;
-    private listRect;
+    private backgroundRect;
     private scrollLength;
     private adjustedIndex;
     maxHeight: number;

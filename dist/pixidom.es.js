@@ -677,7 +677,7 @@ function V(e) {
   return e && e.__esModule && Object.prototype.hasOwnProperty.call(e, "default") ? e.default : e;
 }
 var b, M;
-function W() {
+function k() {
   if (M) return b;
   M = 1;
   var e = {
@@ -808,11 +808,11 @@ function W() {
   };
   return b = e, b;
 }
-var j = W();
-const P = /* @__PURE__ */ V(j);
+var W = k();
+const P = /* @__PURE__ */ V(W);
 class G extends p {
   constructor(t, i) {
-    super(), this.scrolling = !1, this.scrollList = t, this.options = i || {}, this.bg = new PIXI.Graphics(), this.addChild(this.bg), this.scroller = new k(this, i.scrollerOptions), this.addChild(this.scroller), this.scroller.y = 0, this.redraw(), this.registerScrollerEvents();
+    super(), this.scrolling = !1, this.scrollList = t, this.options = i || {}, this.bg = new PIXI.Graphics(), this.addChild(this.bg), this.scroller = new j(this, i.scrollerOptions), this.addChild(this.scroller), this.scroller.y = 0, this.redraw(), this.registerScrollerEvents();
   }
   resizeScrollBar(t, i) {
   }
@@ -850,7 +850,7 @@ class G extends p {
     this.emit("scrolled", i);
   }
 }
-class k extends p {
+class j extends p {
   constructor(t, i) {
     super(), this.scrollBar = t, this.styleObj = i || {}, this.rect = new PIXI.Graphics(), this.addChild(this.rect);
   }
@@ -871,10 +871,10 @@ const I = {
 };
 class U extends PIXI.Container {
   constructor(t, i, s) {
-    if (super(), this.scrollItemsById = {}, this.options = [], this.po = new p(), this.scrollRect = new p(), this.scrollDuration = 0, this._currentScroll = 0, this.lastScroll = 0, this.pointerdownStart = 0, this.startingVisibleChildIndex = 0, this.endingVisibleChildIndex = 0, this.scrollCurrentDur = 0, this.currentAdjustVisibilityDelta = 0, this.animationFrame = null, this.nextItemY = 0, this.scrollToDest = 0, this.listContainer = new p(), this.listRect = new PIXI.Graphics(), this.scrollLength = 0, this.adjustedIndex = 0, this.maxHeight = 0, this.lastOverOption = null, this.lastDownOption = null, this.freezeScroll = !1, this._needsUpdateScoller = !0, this._registeredScrollEvent = !1, this.handleScrollWheelScroll = this.handleScrollWheelScroll.bind(this), this.interactive = !0, this.interactiveChildren = !0, this.__width = u(t.width).value, this.__height = u(t.height).value, this.performanceOptions = s || { ...I }, s)
+    if (super(), this.scrollItemsById = {}, this.options = [], this.po = new p(), this.scrollRect = new p(), this.scrollDuration = 0, this._currentScroll = 0, this.lastScroll = 0, this.pointerdownStart = 0, this.startingVisibleChildIndex = 0, this.endingVisibleChildIndex = 0, this.scrollCurrentDur = 0, this.currentAdjustVisibilityDelta = 0, this.animationFrame = null, this.nextItemY = 0, this.scrollToDest = 0, this.listContainer = new p(), this.backgroundRect = new PIXI.Graphics(), this.scrollLength = 0, this.adjustedIndex = 0, this.maxHeight = 0, this.lastOverOption = null, this.lastDownOption = null, this.freezeScroll = !1, this._needsUpdateScoller = !0, this._registeredScrollEvent = !1, this.handleScrollWheelScroll = this.handleScrollWheelScroll.bind(this), this.interactive = !0, this.interactiveChildren = !0, this.__width = u(t.width).value, this.__height = u(t.height).value, this.performanceOptions = s || { ...I }, s)
       for (let r in I)
         s.hasOwnProperty(r) || (this.performanceOptions[r] = I[r]);
-    this.scrollbarScroll = new PIXI.Graphics(), this.scrollStyleOptions = t, this.scrollLength = 0, this.scrollMask = new PIXI.Graphics(), this.scrollMask.beginFill(16777215), this.scrollMask.drawRect(0, 0, this.__width, this.__height), this.scrollMask.endFill(), this.listRect.beginFill(16777215, 0), this.listRect.drawRect(0, 0, this.__width, this.__height), this.listRect.endFill(), this.scrollRect.addChild(this.listRect), this.addChild(this.scrollMask), this.addChild(this.po), this.po.interactive = !0, this.po.mask = this.scrollMask;
+    this.scrollbarScroll = new PIXI.Graphics(), this.scrollStyleOptions = t, this.scrollLength = 0, this.scrollMask = new PIXI.Graphics(), this.scrollMask.beginFill(16777215), this.scrollMask.drawRect(0, 0, this.__width, this.__height), this.scrollMask.endFill(), this.backgroundRect.beginFill(this.scrollStyleOptions.backgroundColor || 1048575), this.backgroundRect.drawRect(0, 0, this.__width, this.__height), this.backgroundRect.endFill(), this.addChild(this.backgroundRect), this.addChild(this.scrollMask), this.addChild(this.po), this.po.interactive = !0, this.po.mask = this.scrollMask, this.addChild(this.scrollRect);
     let n;
     this.performanceOptions.disableScrollWheelScroll || this.registerScrollEvents(), this.performanceOptions.disableTouchScroll || (this.scrollRect.onSwipe(this.applySwipe.bind(this)), this.on("pointerdown", (r) => {
       this.scrollBar && this.scrollBar.scrolling || this.performanceOptions.disableTouchScroll || this.animationFrame !== null && (cancelAnimationFrame(this.animationFrame), this.po.inDrag || this.po.emit("dragstart", r), this.animationFrame = null);
@@ -933,7 +933,7 @@ class U extends PIXI.Container {
     return s <= i.x && i.x <= n && r <= i.y && i.y <= h;
   }
   resize(t, i) {
-    this.__width = t, this.__height = i, this.scrollMask.clear(), this.scrollMask.beginFill(16777215).drawRect(0, 0, this.__width, this.__height).endFill(), this.listRect.clear(), this.listRect.beginFill(this.scrollStyleOptions.backgroundColor).drawRect(0, 0, this.__width, this.__height).endFill(), this.adjustVisibility(null, !0), this.scrollBar && this.scrollBar.redraw();
+    this.__width = t, this.__height = i, this.scrollMask.clear(), this.scrollMask.beginFill(16777215).drawRect(0, 0, this.__width, this.__height).endFill(), this.backgroundRect.clear(), this.backgroundRect.beginFill(this.scrollStyleOptions.backgroundColor).drawRect(0, 0, this.__width, this.__height).endFill(), this.adjustVisibility(null, !0), this.scrollBar && this.scrollBar.redraw();
   }
   redraw() {
     this.adjustOptions(), this.scrollBar && (this.scrollBar.redraw(), this.scrollBar.x = this.po.width);

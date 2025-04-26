@@ -67,7 +67,7 @@ export class ScrollList extends PIXI.Container {
     private nextItemY: number = 0;
     private scrollToDest: number = 0;
     private listContainer: PixiElement = new PixiElement();
-    private listRect: PIXI.Graphics = new PIXI.Graphics();
+    private backgroundRect: PIXI.Graphics = new PIXI.Graphics();
     private scrollLength: number = 0;
     private adjustedIndex: number = 0;
     maxHeight: number = 0;
@@ -104,10 +104,11 @@ export class ScrollList extends PIXI.Container {
         this.scrollMask.drawRect(0, 0, this.__width, this.__height);
         this.scrollMask.endFill();
 
-        this.listRect.beginFill(0xFFFFFF, 0);
-        this.listRect.drawRect(0, 0, this.__width, this.__height);
-        this.listRect.endFill();
-        this.scrollRect.addChild(this.listRect);
+        this.backgroundRect.beginFill(this.scrollStyleOptions.backgroundColor || 0xfffff);
+        this.backgroundRect.drawRect(0, 0, this.__width, this.__height);
+        this.backgroundRect.endFill();
+        this.addChild(this.backgroundRect);
+      //  this.scrollRect.addChild(this.backgroundRect);
 
      //   this.scrollMask.hitArea = new PIXI.Rectangle(0, 0, this.__width, this.__height);
 
@@ -116,7 +117,7 @@ export class ScrollList extends PIXI.Container {
         this.po.interactive = true;
         this.po.mask = this.scrollMask;
 
-     //   this.addChild(this.scrollRect);
+        this.addChild(this.scrollRect);
 
         let lastScrollY;
         let heldTimeout = null;
@@ -261,8 +262,8 @@ export class ScrollList extends PIXI.Container {
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();
 
-        this.listRect.clear();
-        this.listRect
+        this.backgroundRect.clear();
+        this.backgroundRect
             .beginFill(this.scrollStyleOptions.backgroundColor)
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();

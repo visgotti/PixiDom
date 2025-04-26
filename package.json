@@ -1,6 +1,6 @@
 {
   "name": "pixidom.js",
-  "version": "0.1.0",
+  "version": "0.1.01",
   "description": "Library pixi containers extended with specific functionality somewhat mimicking the DOM",
   "keywords": [
     "pixi",
