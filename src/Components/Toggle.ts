@@ -8,6 +8,7 @@ import ColorTween from 'gotti-color-tween/dist/color-tween.js';
 const circlePadding = 2;
 
 import { ToggleOptions, AnimationType, OutlineOptions, LabelOptions, AnimationOptions, ToggleAnimationExclusions } from "../types";
+import { BitmapTextLike, createBitmapText, setBitmapTextTint } from "../pixi-adapter-utils";
 
 export class Toggle extends PIXI.Container {
     private _toggled: boolean = true;
@@ -15,10 +16,11 @@ export class Toggle extends PIXI.Container {
     private circleGraphic: PIXI.Graphics;
     private options: ToggleOptions;
     private circleRadius: number;
+    private circleDiameter: number;
     private computedBorderRadius: number;
 
-    private onText: PIXI.extras.BitmapText;
-    private offText: PIXI.extras.BitmapText;
+    private onText: BitmapTextLike | null = null;
+    private offText: BitmapTextLike | null = null;
     private usingLabels: boolean = false;
     private updateToggle: Function;
 
@@ -48,8 +50,8 @@ export class Toggle extends PIXI.Container {
 
         if(options.labelOptions) {
             const { fontName, onLabel, offLabel, onColor, offColor } = options.labelOptions;
-            this.onText = new PIXI.extras.BitmapText(onLabel, { font: fontName, align: "left" });
-            this.offText = new PIXI.extras.BitmapText(offLabel, { font: fontName, align: "left" });
+            this.onText = createBitmapText(onLabel, { font: fontName, align: "left" });
+            this.offText = createBitmapText(offLabel, { font: fontName, align: "left" });
             this.addChild(this.onText);
             this.addChild(this.offText);
 
@@ -59,7 +61,7 @@ export class Toggle extends PIXI.Container {
             const offXDiff = (options.width / 2) - this.offText.width;
             if(offXDiff < 0) {throw new Error('Label for off text was too long')}
             this.offText.x = ((options.width / 2)  + offXDiff / 2) - circlePadding;
-            this.offText.tint = offColor;
+            setBitmapTextTint(this.offText, offColor);
 
             const offYDiff = options.height - this.offText.height;
             if(offYDiff < 0) { throw new Error('Label font is too large to fit within height of toggle, either increase height or use smaller font')};
@@ -68,7 +70,7 @@ export class Toggle extends PIXI.Container {
             const onXDiff = (options.width / 2) - this.onText.width;
             if(onXDiff < 0) {throw new Error('Label for on text was too long')}
             this.onText.x = circlePadding + onXDiff / 2;
-            this.onText.tint = onColor;
+            setBitmapTextTint(this.onText, onColor);
 
             const onYDiff = options.height - this.onText.height;
             if(onYDiff < 0) { throw new Error('Label font is too large to fit within height of toggle, either increase height or use smaller font')};
@@ -76,15 +78,14 @@ export class Toggle extends PIXI.Container {
             this.usingLabels = true;
         }
 
-        this.circleRadius = (this.options.height / 2) - circlePadding;
-        this.circleGraphic = new PIXI.Graphics();
-        this.circleGraphic.drawCircle(0, 0, this.circleRadius);
-
-        this.circleGraphic.y = circlePadding;
+    this.circleRadius = (this.options.height / 2) - circlePadding;
+    this.circleDiameter = this.circleRadius * 2;
+    this.circleGraphic = new PIXI.Graphics();
+    this.circleGraphic.y = circlePadding;
 
         this.addChild(this.circleGraphic);
 
-        this.toggleCircleTravelDistance = Math.abs((circlePadding) -  (this.options.width - this.circleGraphic.width - circlePadding));
+        this.toggleCircleTravelDistance = Math.abs(this.getCircleCenter(false) - this.getCircleCenter(true));
 
         this.interactive = true;
         this.buttonMode = true;
@@ -121,7 +122,7 @@ export class Toggle extends PIXI.Container {
     }
 
     get travelToX() {
-        return this.toggled ? circlePadding : this.options.width - this.circleGraphic.width - circlePadding;
+        return this.toggled ? this.getCircleCenter(false) : this.getCircleCenter(true);
     }
 
     set toggled(val) {
@@ -178,10 +179,7 @@ export class Toggle extends PIXI.Container {
         };
 
         if (this.circleColorsArrayIndex !== null) {
-            this.circleGraphic.clear();
-            this.circleGraphic.beginFill(string2hex(colors[this.circleColorsArrayIndex].hex()));
-            this.circleGraphic.drawCircle(this.circleRadius, this.circleRadius, this.circleRadius);
-            this.circleGraphic.endFill();
+            this.setCircleColor(string2hex(colors[this.circleColorsArrayIndex].hex()));
         };
     }
 
@@ -221,12 +219,12 @@ export class Toggle extends PIXI.Container {
 
         if(this._toggled) {
             backgroundColor = this.options.onBackgroundColor;
-            xPosition = this.options.width - this.circleGraphic.width - circlePadding;
+            xPosition = this.options.width - this.circleDiameter - circlePadding;
             circleColor =  this.options.onCircleColor;
             this._showOnText();
         } else {
             backgroundColor =  this.options.offBackgroundColor;
-            xPosition =  0 + circlePadding;
+            xPosition =  circlePadding;
             circleColor = this.options.offCircleColor;
             this._showOffText();
         }
@@ -235,11 +233,21 @@ export class Toggle extends PIXI.Container {
         this.backgroundGraphic.drawRoundedRect(0, 0, this.options.width, this.options.height, this.computedBorderRadius);
         this.backgroundGraphic.endFill();
 
+        this.setCircleColor(circleColor);
+        this.circleGraphic.x = xPosition;
+    }
+
+    private setCircleColor(color: number) {
         this.circleGraphic.clear();
-        this.circleGraphic.beginFill(circleColor);
+        this.circleGraphic.beginFill(color);
         this.circleGraphic.drawCircle(this.circleRadius, this.circleRadius, this.circleRadius);
         this.circleGraphic.endFill();
-        this.circleGraphic.x = xPosition;
+    }
+
+    private getCircleCenter(isRight: boolean) {
+        return isRight
+            ? this.options.width - circlePadding - this.circleDiameter
+            : circlePadding;
     }
 
     private _showOnText() {

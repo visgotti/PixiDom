@@ -1,22 +1,13 @@
 const canvas = document.getElementById('canvas');
+const RENDER_WIDTH = 600;
+const RENDER_HEIGHT = 600;
 
-const renderer = PIXI.autoDetectRenderer({
-    width: 600,
-    height: 600,
-    antialias: false,
-    roundPixels: true,
-    resolution:  1,
-    view: canvas,
-});
+const adapter = PIXI_DOM;
 
-renderer.view.width = 600;
-renderer.view.height = 600;
-renderer.view.style.width = '600px';
-renderer.view.style.height = '600px';
+adapter.ensurePixiCanvasFallback();
 
-const stage = new PIXI.Container();
-stage.width = 600;
-stage.height = 600;
+let renderer = null;
+let stage = null;
 
 const SLIDER_OPTS = {
     width: 100,
@@ -35,18 +26,52 @@ const SLIDER_OPTS = {
     startingValue: 25,
     minValue: 2,
     maxValue: 50,
-  }
+  };
 
-PIXI.loader.load((loader, resources) => {
-    const slider = new PIXI.Slider(SLIDER_OPTS);
-    stage.addChild(slider);
-    console.log({ slider });
-    slider.x = 50;
-    slider.y = 50;
-    slider.onChange((e) => {
-        console.log('changed', e);
+const run = async () => {
+    const rendererOptions = {
+        width: RENDER_WIDTH,
+        height: RENDER_HEIGHT,
+        antialias: false,
+        roundPixels: true,
+        resolution: 1,
+        canvas,
+        forceWebgl: true,
+    };
+
+    try {
+        renderer = await adapter.resolvePixiRenderer(rendererOptions);
+    } catch (error) {
+        console.error('Failed to initialize PIXI renderer', error);
+        return;
+    }
+
+    if (!renderer) {
+        console.error('PIXI renderer resolved to an invalid value');
+        return;
+    }
+    stage = new PIXI.Container();
+    stage.width = RENDER_WIDTH;
+    stage.height = RENDER_HEIGHT;
+
+    const loader = adapter.getPixiLoader();
+    loader.load(() => {
+        const slider = new PIXI.Slider(SLIDER_OPTS);
+        stage.addChild(slider);
+        console.log({ slider });
+        slider.x = 50;
+        slider.y = 50;
+        slider.onChange((e) => {
+            console.log('changed', e);
+        });
+
+        const renderLoop = () => {
+            adapter.renderContainer(renderer, stage);
+        };
+
+        renderLoop();
+        setInterval(renderLoop, 1000 / 30);
     });
-    setInterval(() => {
-        renderer.render(stage);
-    }, 1000/30);
-});
+};
+
+run();

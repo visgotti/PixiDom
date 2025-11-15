@@ -5,26 +5,55 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:legacy": "webpack --config webpack.config.js --mode production",
     "preview": "vite preview",
-    "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit"
+    "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit",
+    "serve:examples": "node scripts/serve-examples.js",
+    "e2e": "npm run test:e2e",
+    "e2e:report": "sh -c 'npm run test:e2e; STATUS=$?; npx playwright show-report; exit $STATUS'",
+    "test:e2e": "playwright test",
+    "test:e2e:update": "playwright test --update-snapshots"
   },
-  "main": "lib/pixidom.js",
-  "module": "lib/pixidom.es.js",
-  "types": "lib/index.d.ts",
+  "main": "dist/index.cjs",
+  "module": "dist/index.es.js",
+  "types": "dist/index.d.ts",
+  "unpkg": "dist/pixidom.js",
+  "jsdelivr": "dist/pixidom.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/pixidom.js",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs"
+    },
+    "./index": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/pixidom.js",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
   "author": "visgotti",
   "license": "MIT",
   "devDependencies": {
+    "@playwright/test": "^1.48.2",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.6",
     "@types/pixi.js": "^4.8.7",
     "chai": "^4.2.0",
     "elliptic": "^6.5.3",
     "mocha": "^6.1.4",
+    "pixelmatch": "^7.1.0",
+    "pixi.js": "^8.1.5",
+    "pngjs": "^7.0.0",
     "ts-loader": "^6.0.1",
     "ts-node": "^8.1.0",
     "typescript": "^5.3.3",
     "vite": "^6.0.11",
-    "vite-plugin-dts": "^4.5.0"
+    "vite-plugin-dts": "^4.5.0",
+    "webpack": "^5.95.0",
+    "webpack-cli": "^5.1.4"
   },
   "repository": {
     "type": "git",

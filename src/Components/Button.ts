@@ -3,6 +3,7 @@ import {parseLengthMeasurements} from "../utils";
 import {StyleOptionsParams} from "./TextInput/TextField";
 
 import { PixiElement } from "../Element";
+import { BitmapTextLike, createBitmapText, setBitmapTextTint } from "../pixi-adapter-utils";
 
 export interface ButtonStyleStateOptions {
     width?: number,
@@ -36,10 +37,10 @@ enum BtnState {
 
 export class Button extends PixiElement {
     private _text: string;
-    private bitmapTxtSprite: PIXI.extras.BitmapText;
-    private txtSprite: PIXI.Text;
-    private bgGraphic: PIXI.Graphics;
-    private bgSprite: PIXI.Sprite;
+    private bitmapTxtSprite: BitmapTextLike | null = null;
+    private txtSprite: PIXI.Text | null = null;
+    private bgGraphic: PIXI.Graphics | null = null;
+    private bgSprite: PIXI.Sprite | null = null;
     private styleOptions: ButtonStyleOptions = { defaultStyle: {}, font: '', useBitmapText: true };
     private _currentStyleState: ButtonStyleStateOptions;
     private _btnState: BtnState = BtnState.NONE;
@@ -87,7 +88,7 @@ export class Button extends PixiElement {
         let sprite;
         if(this.styleOptions.useBitmapText) {
             if(!this.bitmapTxtSprite) {
-                this.bitmapTxtSprite = new PIXI.extras.BitmapText('', {font: this.styleOptions.font, align: 'center'});
+                this.bitmapTxtSprite = createBitmapText('', {font: this.styleOptions.font, align: 'center'});
             }
             if(this.txtSprite) {
                 this.txtSprite.destroy();
@@ -110,7 +111,7 @@ export class Button extends PixiElement {
         }
         if(this.currentStyleState.textColor || this.currentStyleState.textColor == 0) {
             if(this.styleOptions.useBitmapText) {
-                this.bitmapTxtSprite.tint = this.currentStyleState.textColor;
+                setBitmapTextTint(this.bitmapTxtSprite, this.currentStyleState.textColor);
             } else {
                 this.txtSprite.style.fill = this.currentStyleState.textColor
             }

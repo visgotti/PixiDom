@@ -46,12 +46,34 @@ describe('parseMeasurement', () => {
             error: 'Can not have negative pixel length value',
         })
     });
-    it('should invalidate anything that doesnt have a px or %', () => {
-        expect(parseLengthMeasurements('42342234')).to.deep.equal({
-            valid: false,
-            error: 'Length values must either be in % or px',
-        });
+    it('should accept plain numbers as pixel measurements', () => {
         expect(parseLengthMeasurements(42342234)).to.deep.equal({
+            valid: true,
+            value: 42342234,
+            type: 'pixel',
+        });
+        expect(parseLengthMeasurements('42342234')).to.deep.equal({
+            valid: true,
+            value: 42342234,
+            type: 'pixel',
+        });
+    });
+
+    it('should accept pre-normalized measurement objects', () => {
+        expect(parseLengthMeasurements({ value: 50, type: 'percent' } as any)).to.deep.equal({
+            valid: true,
+            value: 50,
+            type: 'percent',
+        });
+        expect(parseLengthMeasurements({ value: 150, type: 'pixel' } as any)).to.deep.equal({
+            valid: true,
+            value: 150,
+            type: 'pixel',
+        });
+    });
+
+    it('should invalidate anything that doesnt have a px or %', () => {
+        expect(parseLengthMeasurements('')).to.deep.equal({
             valid: false,
             error: 'Length values must either be in % or px',
         });

@@ -1,90 +1,116 @@
 const canvas = document.getElementById('canvas');
+const RENDER_WIDTH = 600;
+const RENDER_HEIGHT = 600;
 
-const renderer = PIXI.autoDetectRenderer({
-    width: 600,
-    height: 600,
-    antialias: false,
-    roundPixels: true,
-    resolution:  1,
-    view: canvas,
-});
+const adapter = PIXI_DOM;
 
-renderer.view.width = 600;
-renderer.view.height = 600;
-renderer.view.style.width = '600px';
-renderer.view.style.height = '600px';
+adapter.ensurePixiCanvasFallback();
 
-const stage = new PIXI.Container();
-stage.width = 600;
-stage.height = 600;
+let renderer = null;
+let stage = null;
 
-const rect = new PIXI.Graphics();
-rect.beginFill(0xFFFF00);
-rect.lineStyle(5, 0xFF0000);
-rect.drawRect(0, 0, 100, 100);
-
-const element = new PIXI.Element();
-element.addChild(rect);
-stage.addChild(element);
-element.center();
-
-const events = [];
-
-element.onSwipeUp(power => {
-    events.push('swipe up')
-});
-
-element.onSwipeDown(power => {
-    events.push('swipe down')
-});
-
-// second param is time needed for hold
-element.onDragStart(event => {
-    console.log('drag start event', event);
-    events.push('drag start');
-}, 50   /*defaults to 50*/ );
-
-element.onHeldDown(() => {
-    console.log('held down for a second')
-}, 1000);
-
-element.onHeldDown(() => {
-    console.log('held down for 3 seconds');
-}, 3000);
-
-element.onDragEnd(event => {
-    events.push('drag end');
-});
-
-element.onDragMove(event => {
-    events.push('drag move')
-});
-element.onMouseDown(event => {
-    events.push('mouse down');
-});
-element.onMouseMove(event => {
-    events.push('mouse move');
-});
-element.onMouseOut(event => {
-    events.push('mouse out');
-});
-element.onMouseOver(event => {
-    events.push('mouse over');
-});
-element.onMouseUp(event => {
-    events.push('mouse up');
-});
-element.onDoubleClick(event => {
-    events.push('double click');
-});
 function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
 }
 
-setInterval(() => {
-   renderer.render(stage);
-   if(events.length) {
-       console.log('Events detected: (within 1 fps loop)', events.filter(onlyUnique).join(', '));
-   }
-   events.length = 0;
-}, 1000/1);
+const run = async () => {
+    const rendererOptions = {
+        width: RENDER_WIDTH,
+        height: RENDER_HEIGHT,
+        antialias: false,
+        roundPixels: true,
+        resolution: 1,
+        canvas,
+        forceWebgl: true,
+    };
+
+    try {
+        renderer = await adapter.resolvePixiRenderer(rendererOptions);
+    } catch (error) {
+        console.error('Failed to initialize PIXI renderer', error);
+        return;
+    }
+
+    if (!renderer) {
+        console.error('PIXI renderer resolved to an invalid value');
+        return;
+    }
+    stage = new PIXI.Container();
+    stage.__pixiDomWidth = RENDER_WIDTH;
+    stage.__pixiDomHeight = RENDER_HEIGHT;
+
+    const rect = new PIXI.Graphics();
+    rect.beginFill(0xFFFF00);
+    rect.lineStyle(5, 0xFF0000);
+    rect.drawRect(0, 0, 100, 100);
+
+    const element = new PIXI.Element();
+    element.addChild(rect);
+    stage.addChild(element);
+    element.center();
+
+    const events = [];
+
+    element.onSwipeUp((power) => {
+        events.push('swipe up');
+    });
+
+    element.onSwipeDown((power) => {
+        events.push('swipe down');
+    });
+
+    element.onDragStart((event) => {
+        console.log('drag start event', event);
+        events.push('drag start');
+    }, 50);
+
+    element.onHeldDown(() => {
+        console.log('held down for a second');
+    }, 1000);
+
+    element.onHeldDown(() => {
+        console.log('held down for 3 seconds');
+    }, 3000);
+
+    element.onDragEnd((event) => {
+        events.push('drag end');
+    });
+
+    element.onDragMove((event) => {
+        events.push('drag move');
+    });
+    element.onMouseDown((event) => {
+        events.push('mouse down');
+    });
+    element.onMouseMove((event) => {
+        events.push('mouse move');
+    });
+    element.onMouseOut((event) => {
+        events.push('mouse out');
+    });
+    element.onMouseOver((event) => {
+        events.push('mouse over');
+    });
+    element.onMouseUp((event) => {
+        events.push('mouse up');
+    });
+    element.onDoubleClick((event) => {
+        events.push('double click');
+    });
+
+    const renderLoop = () => {
+        adapter.renderContainer(renderer, stage);
+    };
+
+    renderLoop();
+
+    setInterval(() => {
+        renderLoop();
+        if (events.length) {
+            console.log('Events detected: (within 1 fps loop)', events.filter(onlyUnique).join(', '));
+        }
+        events.length = 0;
+    }, 1000 / 1);
+};
+
+run();

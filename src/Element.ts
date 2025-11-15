@@ -100,14 +100,43 @@ export class PixiElement extends PIXI.Container {
     }
 
     public centerX() {
-        if(this.parent) {
-            this.x = this.parent.width / 2 - this.width / 2;
+        if(!this.parent) {
+            return;
         }
+        const parentWidth = this.getParentDimension('width');
+        const ownWidth = this.width || 0;
+        this.x = parentWidth / 2 - ownWidth / 2;
     }
     public centerY() {
-        if(this.parent) {
-            this.y = this.parent.height / 2 - this.height / 2;
+        if(!this.parent) {
+            return;
         }
+        const parentHeight = this.getParentDimension('height');
+        const ownHeight = this.height || 0;
+        this.y = parentHeight / 2 - ownHeight / 2;
+    }
+
+    private getParentDimension(axis: 'width' | 'height'): number {
+        if(!this.parent) {
+            return 0;
+        }
+        const numeric = (this.parent as any)[axis];
+        if(typeof numeric === 'number' && numeric > 0) {
+            return numeric;
+        }
+        const fallbackKey = axis === 'width' ? '__pixiDomWidth' : '__pixiDomHeight';
+        const fallbackValue = (this.parent as any)[fallbackKey];
+        if(typeof fallbackValue === 'number' && fallbackValue > 0) {
+            return fallbackValue;
+        }
+        if(typeof (this.parent as any).getBounds === 'function') {
+            const bounds = this.parent.getBounds();
+            const boundValue = axis === 'width' ? bounds.width : bounds.height;
+            if(typeof boundValue === 'number' && boundValue > 0) {
+                return boundValue;
+            }
+        }
+        return 0;
     }
     public center() {
         this.centerX();

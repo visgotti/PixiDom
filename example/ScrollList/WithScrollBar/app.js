@@ -3,35 +3,122 @@ Array.prototype.random = function () {
 }
 
 const canvas = document.getElementById('canvas');
+const adapter = window.PIXI_DOM || {};
+if (typeof adapter.ensurePixiCanvasFallback === 'function') {
+    adapter.ensurePixiCanvasFallback();
+}
 
-const renderer = PIXI.autoDetectRenderer({
-    width: 600,
-    height: 600,
-    antialias: false,
-    roundPixels: true,
-    resolution:  1,
-    view: canvas,
-});
+const RENDER_WIDTH = 600;
+const RENDER_HEIGHT = 600;
 
-renderer.view.width = 600;
-renderer.view.height = 600;
-renderer.view.style.width = '600px';
-renderer.view.style.height = '600px';
+if (canvas) {
+    canvas.width = RENDER_WIDTH;
+    canvas.height = RENDER_HEIGHT;
+    if (canvas.style) {
+        canvas.style.width = `${RENDER_WIDTH}px`;
+        canvas.style.height = `${RENDER_HEIGHT}px`;
+    }
+}
+
+let renderer = null;
 
 const stage = new PIXI.Container();
-stage.width = 600;
-stage.height = 600;
+stage.width = RENDER_WIDTH;
+stage.height = RENDER_HEIGHT;
+
+const renderStage = () => {
+    if (!renderer) {
+        return;
+    }
+    if (typeof adapter.renderContainer === 'function') {
+        adapter.renderContainer(renderer, stage);
+    } else if (typeof renderer.render === 'function') {
+        renderer.render(stage);
+    }
+};
+
+const initializeRenderer = async () => {
+    const rendererOptions = {
+        width: RENDER_WIDTH,
+        height: RENDER_HEIGHT,
+        antialias: false,
+        roundPixels: true,
+        resolution: 1,
+        view: canvas,
+        configureView: true,
+        fallbackCanvas: canvas,
+    };
+
+    try {
+        if (typeof adapter.resolvePixiRenderer === 'function') {
+            renderer = await adapter.resolvePixiRenderer(rendererOptions);
+        } else {
+            const candidate = PIXI.autoDetectRenderer(rendererOptions);
+            renderer = candidate && typeof candidate.then === 'function' ? await candidate : candidate;
+        }
+    } catch (error) {
+        console.error('Failed to initialize PIXI renderer', error);
+        renderer = null;
+        return;
+    }
+
+    if (!renderer) {
+        console.error('PIXI renderer is unavailable.');
+        return;
+    }
+
+    if (typeof adapter.configureRendererView === 'function') {
+        adapter.configureRendererView(renderer, RENDER_WIDTH, RENDER_HEIGHT, canvas);
+    } else if (typeof renderer.resize === 'function') {
+        try {
+            renderer.resize(RENDER_WIDTH, RENDER_HEIGHT);
+        } catch (error) {
+            /* noop */
+        }
+    }
+
+    const view = renderer.view || renderer.canvas;
+    if (view) {
+        view.width = RENDER_WIDTH;
+        view.height = RENDER_HEIGHT;
+        if (view.style) {
+            view.style.width = `${RENDER_WIDTH}px`;
+            view.style.height = `${RENDER_HEIGHT}px`;
+        }
+    }
+
+    if (typeof window !== 'undefined') {
+        window.renderer = renderer;
+        window.stage = stage;
+    }
+
+    renderStage();
+};
+
+initializeRenderer();
 
 let scrollListWidth = 300;
 let scrollListHeight = 400;
+const SHOW_DEBUG_CONTROLS = /controls=1/.test(window.location.search);
 
+const COLOR_PALETTE = [
+    0x8e44ad,
+    0x2980b9,
+    0x27ae60,
+    0xc0392b,
+    0xf39c12,
+    0x16a085,
+    0x2c3e50,
+    0xd35400,
+    0x7f8c8d,
+    0xbdc3c7,
+];
+
+let colorPointer = 0;
 function getRandomColor() {
-    var letters = '0123456789ABCDEF';
-    var color = '#';
-    for (var i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return PIXI.utils.string2hex(color);
+    const color = COLOR_PALETTE[colorPointer % COLOR_PALETTE.length];
+    colorPointer++;
+    return color;
 }
 
 function redrawWithBorder(el) {
@@ -117,67 +204,112 @@ function createOptions(n, borderWidth) {
     return options;
 }
 
-const scrollList = new PIXI.ScrollList({ width: scrollListWidth, height: scrollListHeight, scrollBarOptions: { width: 30, height: 100, scrollerOptions: { color: 0xff0000 } }}, null, { disableTouchScroll: true });
-scrollList.addScrollItems(createOptions(50, 5));
+const scrollList = new PIXI.ScrollList({ width: scrollListWidth, height: scrollListHeight, scrollBarOptions: { width: 30, height: 100, backgroundColor: 0x233240, scrollerOptions: { color: 0xff5252 } }}, null, { disableTouchScroll: true });
+scrollList.addScrollItems(createOptions(40, 5));
 stage.addChild(scrollList);
 scrollList.y = 100;
 scrollList.x = 100;
 
-PIXI.loader.add('../../fonts/small.fnt');
-PIXI.loader.load((loader, resources) => {
-    const addTenButton = new PIXI.extras.BitmapText('Add 10 options', { font: 'small', align: "left" });
-    addTenButton.interactive = true;
-    addTenButton.buttonMode = true;
-    addTenButton.tint = 0xffffff;
-    addTenButton.on('pointertap', () => {
-        scrollList.addScrollItems(createOptions(10, 5));
-        if(scrollList.options.length > 10) {
-            removeLast10Button.visible = true;
+function renderFrames(iterations) {
+    const frames = Math.max(1, iterations || 1);
+    for (let i = 0; i < frames; i++) {
+        renderStage();
+    }
+}
+
+window.__PIXIDOM__ = window.__PIXIDOM__ || {};
+window.__PIXIDOM__.scrollListWithBarDemo = {
+    scrollList,
+    getScrollPosition: () => typeof scrollList.currentScroll === 'number' ? scrollList.currentScroll : 0,
+    setScrollPercent: (percent) => {
+        if (typeof scrollList.setScrollPercent === 'function') {
+            scrollList.setScrollPercent(percent);
         }
-    });
-    stage.addChild(addTenButton);
-    addTenButton.x = stage.width - addTenButton.width;
-    addTenButton.y = 20;
-
-    const removeLast10Button = new PIXI.extras.BitmapText('Remove last 10 options', { font: 'small', align: "left" });
-    removeLast10Button.interactive = true;
-    removeLast10Button.buttonMode = true;
-    removeLast10Button.tint = 0xffffff;
-    removeLast10Button.on('pointertap', () => {
-        scrollList.spliceScrollItems(scrollList.options.length - 10);
-        if(scrollList.options.length <= 10) {
-            removeLast10Button.visible = false;
+    },
+    advance: (delta, steps) => {
+        renderFrames(steps);
+    },
+    getScrollerPoints: () => {
+        const bar = scrollList['scrollBar'];
+        const scroller = bar && bar['scroller'];
+        const view = renderer && (renderer.canvas || renderer.view?.canvas || renderer.view);
+        if (!bar || !scroller || !view || typeof scroller.getBounds !== 'function' || typeof view.getBoundingClientRect !== 'function') {
+            return null;
         }
-    });
-    stage.addChild(removeLast10Button);
-    removeLast10Button.x = stage.width - addTenButton.width;
-    removeLast10Button.y = 35;
+        const canvasRect = view.getBoundingClientRect();
+        const bounds = scroller.getBounds();
+        const centerX = bounds.x - canvasRect.left + bounds.width / 2;
+        const centerY = bounds.y - canvasRect.top + bounds.height / 2;
+        const travel = Math.max(0, bar.visibleLength - scroller.height);
+        return {
+            start: { x: centerX, y: centerY },
+            mid: { x: centerX, y: centerY + travel / 2 },
+        };
+    },
+};
 
-    const dec = new PIXI.extras.BitmapText('Decrease height by 50 pixels', { font: 'small', align: "left" });
-    dec.interactive = true;
-    dec.buttonMode = true;
-    dec.tint = 0xffffff;
-    dec.on('pointertap', () => {
-        scrollListHeight -= 50;
-        scrollList.resize(scrollListWidth, scrollListHeight);
-    });
-    stage.addChild(dec);
-    dec.x = stage.width - dec.width;
-    dec.y = 50;
+if (SHOW_DEBUG_CONTROLS) {
+    const loader = typeof adapter.getPixiLoader === 'function'
+        ? adapter.getPixiLoader()
+        : (PIXI.loader || (PIXI.Loader && PIXI.Loader.shared));
+    if (loader && typeof loader.add === 'function') {
+        loader.add('../../fonts/small.fnt');
+        loader.load(() => {
+        const addTenButton = new PIXI.extras.BitmapText('Add 10 options', { font: 'small', align: "left" });
+        addTenButton.interactive = true;
+        addTenButton.buttonMode = true;
+        addTenButton.tint = 0xffffff;
+        addTenButton.on('pointertap', () => {
+            scrollList.addScrollItems(createOptions(10, 5));
+            if(scrollList.options.length > 10) {
+                removeLast10Button.visible = true;
+            }
+        });
+        stage.addChild(addTenButton);
+        addTenButton.x = stage.width - addTenButton.width;
+        addTenButton.y = 20;
 
-    const inc = new PIXI.extras.BitmapText('Increase height by 50 pixels', { font: 'small', align: "left" });
-    inc.interactive = true;
-    inc.buttonMode = true;
-    inc.tint = 0xffffff;
-    inc.on('pointertap', () => {
-        scrollListHeight += 50;
-        scrollList.resize(scrollListWidth, scrollListHeight);
-    });
-    stage.addChild(inc);
-    inc.x = stage.width - inc.width;
-    inc.y = 65;
-});
+        const removeLast10Button = new PIXI.extras.BitmapText('Remove last 10 options', { font: 'small', align: "left" });
+        removeLast10Button.interactive = true;
+        removeLast10Button.buttonMode = true;
+        removeLast10Button.tint = 0xffffff;
+        removeLast10Button.on('pointertap', () => {
+            scrollList.spliceScrollItems(scrollList.options.length - 10);
+            if(scrollList.options.length <= 10) {
+                removeLast10Button.visible = false;
+            }
+        });
+        stage.addChild(removeLast10Button);
+        removeLast10Button.x = stage.width - addTenButton.width;
+        removeLast10Button.y = 35;
 
-setInterval(() => {
-   renderer.render(stage);
-}, 1000/60);
+        const dec = new PIXI.extras.BitmapText('Decrease height by 50 pixels', { font: 'small', align: "left" });
+        dec.interactive = true;
+        dec.buttonMode = true;
+        dec.tint = 0xffffff;
+        dec.on('pointertap', () => {
+            scrollListHeight -= 50;
+            scrollList.resize(scrollListWidth, scrollListHeight);
+        });
+        stage.addChild(dec);
+        dec.x = stage.width - dec.width;
+        dec.y = 50;
+
+        const inc = new PIXI.extras.BitmapText('Increase height by 50 pixels', { font: 'small', align: "left" });
+        inc.interactive = true;
+        inc.buttonMode = true;
+        inc.tint = 0xffffff;
+        inc.on('pointertap', () => {
+            scrollListHeight += 50;
+            scrollList.resize(scrollListWidth, scrollListHeight);
+        });
+        stage.addChild(inc);
+        inc.x = stage.width - inc.width;
+        inc.y = 65;
+        });
+    } else {
+        console.warn('Unable to resolve PIXI loader for ScrollList debug controls.');
+    }
+}
+
+setInterval(renderStage, 1000/60);

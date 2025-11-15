@@ -38,8 +38,8 @@ export default function <TBase extends Constructor>(Base: TBase){
             this.onKeyPress = this.onKeyPress.bind(this);
             this.onKeyDown = this.onKeyDown.bind(this);
 
-            super.on('focus', this.registerHandlers);
-            super.on('blur', this.unregisterHandlers);
+            this.on('focus', this.registerHandlers);
+            this.on('blur', this.unregisterHandlers);
         }
 
         public changeStateIndex(change) {
@@ -51,18 +51,18 @@ export default function <TBase extends Constructor>(Base: TBase){
         }
 
         public registerHandlers() {
-            document.addEventListener("copy", this.onCopy);
-            document.addEventListener("cut", this.onCut);
-            document.addEventListener("paste", this.onPaste);
-            document.addEventListener("keypress", this.onKeyPress);
-            document.addEventListener("keydown", this.onKeyDown);
+            document.addEventListener("copy", this.onCopy, true);
+            document.addEventListener("cut", this.onCut, true);
+            document.addEventListener("paste", this.onPaste, true);
+            document.addEventListener("keypress", this.onKeyPress, true);
+            document.addEventListener("keydown", this.onKeyDown, true);
         }
         public unregisterHandlers() {
-            document.removeEventListener("copy", this.onCopy);
-            document.removeEventListener("cut", this.onCut);
-            document.removeEventListener("paste", this.onPaste);
-            document.removeEventListener("keypress", this.onKeyPress);
-            document.removeEventListener("keydown", this.onKeyDown);
+            document.removeEventListener("copy", this.onCopy, true);
+            document.removeEventListener("cut", this.onCut, true);
+            document.removeEventListener("paste", this.onPaste, true);
+            document.removeEventListener("keypress", this.onKeyPress, true);
+            document.removeEventListener("keydown", this.onKeyDown, true);
         }
 
         public onPaste(event) {

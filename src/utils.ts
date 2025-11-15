@@ -10,45 +10,103 @@ type ParsedMeasurement = {
 }
 
 export const parseLengthMeasurements = function(measurement) : ParsedMeasurement {
-    let value: number;
-    if(!isNaN(measurement) && measurement != null) {
-        return {
-            valid: true,
-            type: 'pixel',
-            value: measurement
+    const invalid = (error: string): ParsedMeasurement => ({ valid: false, error });
+    const asNumber = (value: any) => {
+        if (typeof value === 'number' && !Number.isNaN(value)) {
+            return value;
         }
-    }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed.length) {
+                return undefined;
+            }
+            const parsed = Number(trimmed);
+            if (!Number.isNaN(parsed)) {
+                return parsed;
+            }
+        }
+        return undefined;
+    };
+
     try {
-        const last2 = measurement.toString().slice(-2);
-        if(last2.charAt(1) === '%') {
-            value = parseInt(measurement.slice(0, -1));
-            if(Number.isNaN(value)) {
-                throw new Error('Did not find a number in front of % sign')
-            } else {
-                return {
-                    valid: true,
-                    value,
-                    type: 'percent'
-                }
-            }
-        } else if (last2 === 'px') {
-            value = parseInt(measurement.slice(0, -2));
-            if(Number.isNaN(value)) {
-                throw new Error('Did not find a number in front of px')
-            } else if(value < 0) {
-                throw new Error('Can not have negative pixel length value')
-            } else {
-                return {
-                    valid: true,
-                    value,
-                    type: 'pixel'
-                }
-            }
-        } else {
+        if (measurement == null) {
             throw new Error('Length values must either be in % or px');
         }
+
+        if (typeof measurement === 'object' && 'value' in measurement && 'type' in measurement) {
+            const numeric = asNumber((measurement as ParsedMeasurement).value);
+            if (numeric === undefined) {
+                throw new Error('Did not find a number in front of px');
+            }
+            const type = (measurement as ParsedMeasurement).type === 'percent' ? 'percent' : 'pixel';
+            if (type === 'pixel' && numeric < 0) {
+                throw new Error('Can not have negative pixel length value');
+            }
+            return {
+                valid: true,
+                value: numeric,
+                type,
+            };
+        }
+
+        if (typeof measurement === 'number') {
+            if (measurement < 0) {
+                throw new Error('Can not have negative pixel length value');
+            }
+            return {
+                valid: true,
+                value: measurement,
+                type: 'pixel',
+            };
+        }
+
+        const raw = measurement.toString().trim();
+        if (!raw.length) {
+            throw new Error('Length values must either be in % or px');
+        }
+
+        if (raw.endsWith('%')) {
+            const percentValue = asNumber(raw.slice(0, -1));
+            if (percentValue === undefined) {
+                throw new Error('Did not find a number in front of % sign');
+            }
+            return {
+                valid: true,
+                value: percentValue,
+                type: 'percent',
+            };
+        }
+
+        if (raw.toLowerCase().endsWith('px')) {
+            const pixelValue = asNumber(raw.slice(0, -2));
+            if (pixelValue === undefined) {
+                throw new Error('Did not find a number in front of px');
+            }
+            if (pixelValue < 0) {
+                throw new Error('Can not have negative pixel length value');
+            }
+            return {
+                valid: true,
+                value: pixelValue,
+                type: 'pixel',
+            };
+        }
+
+        const numericValue = asNumber(raw);
+        if (numericValue !== undefined) {
+            if (numericValue < 0) {
+                throw new Error('Can not have negative pixel length value');
+            }
+            return {
+                valid: true,
+                value: numericValue,
+                type: 'pixel',
+            };
+        }
+
+        throw new Error('Length values must either be in % or px');
     } catch(err) {
-        return { valid: false, error: err.message }
+        return invalid(err.message);
     }
 }
 

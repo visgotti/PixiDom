@@ -1,6 +1,9 @@
 import { parseLengthMeasurements } from "../../utils";
 import KeyboardHandlerMixin, { IKeyboardBase } from "../../mixins/KeyboardHandlers";
 import { ValidMeasurement } from "../../types";
+import { BitmapTextLike, createBitmapText, getBitmapTextGlyphs, getPixiVersion } from "../../pixi-adapter-utils";
+
+const DEFAULT_BORDER_COLOR = 0x7b7b7b;
 
 export type StyleOptions = {
     width?: ValidMeasurement,
@@ -9,12 +12,14 @@ export type StyleOptions = {
     cursorWidth: number,
     borderWidth?: number,
     borderColor?: number,
+    borderAccentColor?: number,
     fontColor: number,
     highlightedFontColor: number,
     cursorColor: number,
     backgroundColor: number,
     highlightedBackgroundColor: number,
     borderOpacity: number,
+    borderAccentOpacity?: number,
     xPadding: number,
     yPadding: number,
 }
@@ -24,6 +29,7 @@ export type StyleOptionsParams = {
     height?: number | string,
     borderWidth?: number,
     borderColor?: number,
+    borderAccentColor?: number,
     fontColor?: number,
     highlightedFontColor?: number,
     cursorColor?: number,
@@ -32,6 +38,7 @@ export type StyleOptionsParams = {
     backgroundColor?: number,
     highlightedBackgroundColor?: number,
     borderOpacity?: number,
+    borderAccentOpacity?: number,
     xPadding?: number,
     yPadding?: number,
 }
@@ -42,7 +49,7 @@ const defaultStyleOptions = function() : StyleOptionsParams {
         height: '16px',
         fontColor: 0x000000,
         highlightedFontColor: 0xffffff,
-        borderColor: 0x000000,
+    borderColor: DEFAULT_BORDER_COLOR,
         borderWidth: 1,
         cursorColor: 0x000000,
         cursorHeight: '90%',
@@ -57,13 +64,17 @@ const defaultStyleOptions = function() : StyleOptionsParams {
 
 const lengthFieldsToValidate = ["width", "height", "cursorHeight"];
 
+let TEXT_FIELD_ID = 0;
+
 class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private styleOptions: StyleOptions = {} as StyleOptions;
     private cursorSprite: PIXI.Graphics = new PIXI.Graphics();
     private textbox: PIXI.Graphics = new PIXI.Graphics();
+    private selectionOverlay: PIXI.Graphics = new PIXI.Graphics();
+    private textboxBorder: PIXI.Graphics = new PIXI.Graphics();
     private textboxMask: PIXI.Graphics = new PIXI.Graphics();
 
-    private textSprite: PIXI.extras.BitmapText;
+    private textSprite: BitmapTextLike;
     private inFocus: boolean = false;
 
     private cursorIndex: number = -1;
@@ -84,6 +95,8 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private dragIndexStart: number = 0;
     private dragIndexEnd: number = 0;
     private inDrag: boolean = false;
+    private caretPositionsCacheKey: string | null = null;
+    private caretPositionsCache: number[] | null = null;
 
     public submitKeyCodes: Array<number | string> = [13, "Enter"];
     public ignoreKeys: Array<number | string> = [];
@@ -94,8 +107,10 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private onChangeHandler: Function = () => {};
     private onSubmitHandler: Function = () => {};
     private onCharLimitHandler: Function = () => {};
+    private __pixiDomFieldId: number;
     constructor(font: string, styleOptions?: StyleOptionsParams, maxCharacterLength?, ignoreKeys?) {
         super();
+        this.__pixiDomFieldId = ++TEXT_FIELD_ID;
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
 
         // override destroy method to call blur before destroy so we unregister document handlers if needed.
@@ -119,11 +134,11 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
         this.buttonMode = true;
         this.interactive = true;
 
-        this.textSprite = new PIXI.extras.BitmapText('', { font, align: "left" });
+    this.textSprite = createBitmapText('', { font, align: "left" });
 
         this.cursor = "text";
 
-        this.on('pointerdown', this.handleMouseDown.bind(this));
+    this.on('pointerdown', this.handleMouseDown.bind(this));
         //this.on('touchstart', this.handleMouseDown.bind(this));
 
         this.on('pointerup', this.handleMouseUp.bind(this));
@@ -131,12 +146,14 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
         this.on('pointermove', this.handleMouseMove.bind(this));
     //    this.on('touchmove', this.handleMouseMove.bind(this));
-        this.on('pointerupoutside', this.handleMouseUp.bind(this));
+    this.on('pointerupoutside', this.handleMouseUp.bind(this));
 
-        this.addChild(this.textboxMask);
-        this.addChild(this.textbox);
-        this.addChild(this.textSprite);
-        this.addChild(this.cursorSprite);
+    this.addChild(this.textboxMask);
+    this.addChild(this.textbox);
+    this.addChild(this.selectionOverlay);
+    this.addChild(this.textboxBorder);
+    this.addChild(this.textSprite);
+    this.addChild(this.cursorSprite);
 
         this.textSprite.mask = this.textboxMask;
        // this.mask = this.textboxMask;
@@ -231,8 +248,9 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
             this.overflowOffsetX = 0;
         }
 
-        for(let i = 0; i < this.textSprite.children.length; i++) {
-            const child = this.textSprite.children[i] as PIXI.Sprite;
+        const glyphs = this.getGlyphs();
+        for(let i = 0; i < glyphs.length; i++) {
+            const child = glyphs[i] as PIXI.Sprite;
 
             if(range) {
                 const { indexes } = range;
@@ -255,9 +273,6 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     private redrawTextbox() {
         this.textbox.clear();
         this.textbox.beginFill(this.styleOptions.backgroundColor, 1);
-        if(this.styleOptions.borderWidth > 0 && !Number.isNaN(this.styleOptions.borderWidth)) {
-            this.textbox.lineStyle(this.styleOptions.borderWidth, this.styleOptions.borderColor, this.styleOptions.borderOpacity)
-        }
 
         let { value, type } = this.styleOptions.height;
 
@@ -273,30 +288,123 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
         this.textbox.drawRect(0, 0, maxWidth, height);
         this.textbox.endFill();
 
+        this.selectionOverlay.clear();
         if(range) {
             let start = range.x.start - this.overflowOffsetX;
-            const end = range.x.end - this.overflowOffsetX;
-            this.textbox.beginFill(this.styleOptions.highlightedBackgroundColor, 1);
-            let _width = end-start;
-
-            if(start + _width >= maxWidth) {
-                _width = maxWidth - start;
-            } else {
-                _width = end-start;
+            let end = range.x.end - this.overflowOffsetX;
+            start = Math.max(0, Math.min(maxWidth, start));
+            end = Math.max(start, Math.min(maxWidth, end));
+            const width = end - start;
+            if(width > 0) {
+                this.selectionOverlay.beginFill(this.styleOptions.highlightedBackgroundColor, 1);
+                this.selectionOverlay.drawRect(start, 0, width, height);
+                this.selectionOverlay.endFill();
             }
-
-            if(start + _width === maxWidth && _width > maxWidth) {
-                start = 0;
-                _width = maxWidth;
-            }
-        
-            this.textbox.drawRect(start, 0, _width, height);
-            this.textbox.endFill();
         }
 
         this.textboxMask.clear();
+        this.textboxMask.beginFill(0xffffff, 1);
         this.textboxMask.drawRect(0, 0, maxWidth, height);
+        this.textboxMask.endFill();
+
+    this.drawTextboxBorder(maxWidth, height);
     }
+
+    private drawTextboxBorder(maxWidth: number, height: number) {
+        const target = this.textboxBorder;
+        target.clear();
+        const borderWidth = this.styleOptions.borderWidth ?? 0;
+        if(borderWidth <= 0 || Number.isNaN(borderWidth)) {
+            return;
+        }
+        const hasCustomBorderColor = typeof this.styleOptions.borderColor === "number";
+        const borderColor = hasCustomBorderColor ? this.styleOptions.borderColor : DEFAULT_BORDER_COLOR;
+        const borderOpacity = this.styleOptions.borderOpacity ?? 1;
+        const accentColor = this.getComputedAccentColor(borderColor);
+        const accentOpacity = this.styleOptions.borderAccentOpacity ?? borderOpacity;
+
+        this.fillBorderSegment(target, 0, 0, maxWidth, borderWidth, borderColor, borderOpacity); // top
+        const bottomColor = this.getBottomBorderColor(borderColor);
+        this.fillBorderSegment(target, 0, height - borderWidth, maxWidth, borderWidth, bottomColor, borderOpacity); // bottom
+        this.fillBorderSegment(target, 0, 0, borderWidth, height, borderColor, borderOpacity); // left
+        this.fillBorderSegment(target, maxWidth - borderWidth, 0, borderWidth, height, borderColor, borderOpacity); // right
+
+        if(accentColor !== null && borderWidth >= 2) {
+            const accentHeight = Math.max(1, Math.floor(borderWidth / 2));
+            this.fillBorderSegment(target, 0, 0, maxWidth, accentHeight, accentColor, accentOpacity);
+        }
+
+        this.applyCornerBlends(target, maxWidth, height, borderWidth, borderColor);
+    }
+
+    private getComputedAccentColor(borderColor: number): number | null {
+        if(typeof this.styleOptions.borderAccentColor === "number") {
+            return this.styleOptions.borderAccentColor;
+        }
+        return this.getBorderAccentFallbackColor(borderColor);
+    }
+
+    private getBorderAccentFallbackColor(color: number): number | null {
+        if(this.styleOptions.borderWidth === undefined || (this.styleOptions.borderWidth ?? 0) < 2) {
+            return null;
+        }
+        return this.getHalfToneColor(color);
+    }
+
+    private fillBorderSegment(target: PIXI.Graphics, x: number, y: number, width: number, height: number, color: number, alpha: number) {
+        if(width <= 0 || height <= 0) {
+            return;
+        }
+        target.beginFill(color, alpha);
+        target.drawRect(x, y, width, height);
+        target.endFill();
+    }
+
+    private getBottomBorderColor(color: number): number {
+        if(typeof color !== "number" || Number.isNaN(color)) {
+            return color;
+        }
+        const lighten = (value: number) => Math.min(255, value + 1);
+        const r = (color >> 16) & 0xff;
+        const g = (color >> 8) & 0xff;
+        const b = color & 0xff;
+        return (lighten(r) << 16) | (lighten(g) << 8) | lighten(b);
+    }
+
+    private applyCornerBlends(target: PIXI.Graphics, maxWidth: number, height: number, borderWidth: number, borderColor: number) {
+        if(borderWidth <= 0) {
+            return;
+        }
+        const blendColor = this.getStageEdgeBlendColor(borderColor);
+        if(typeof blendColor !== "number") {
+            return;
+        }
+        const blendSize = Math.min(borderWidth, 1);
+        if(blendSize <= 0) {
+            return;
+        }
+        this.fillBorderSegment(target, 0, 0, blendSize, blendSize, blendColor, 1); // top-left
+        this.fillBorderSegment(target, 0, height - blendSize, blendSize, blendSize, blendColor, 1); // bottom-left
+    }
+
+    private getStageEdgeBlendColor(color: number): number | null {
+        return this.getHalfToneColor(color);
+    }
+
+    private getHalfToneColor(color: number): number | null {
+        if(typeof color !== "number" || Number.isNaN(color)) {
+            return null;
+        }
+        const r = this.halfAndClamp((color >> 16) & 0xff);
+        const g = this.halfAndClamp((color >> 8) & 0xff);
+        const b = this.halfAndClamp(color & 0xff);
+        return (r << 16) | (g << 8) | b;
+    }
+
+    private halfAndClamp(value: number): number {
+        return Math.max(0, Math.min(255, Math.round(value * 0.5)));
+    }
+
 
     private handleMouseUp(e){
         const { x } = e.data.getLocalPosition(this);
@@ -352,22 +460,28 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     }
 
     private getCursorXFromIndex(index) {
+        const padding = this.styleOptions.xPadding ?? 0;
         let leftChar;
         // if theres no children in the text sprite that means our cursor should get x value for the beginning of the textfield
-        if(!this.textSprite.children || !this.textSprite.children.length || index <= 0) {
-            if(this.styleOptions.xPadding) {
-                return this.styleOptions.xPadding;
+        const glyphs = this.getGlyphs();
+        if(glyphs.length && index > 0) {
+            if(index >= glyphs.length) {
+                leftChar = glyphs[glyphs.length - 1]
+            } else {
+                leftChar = glyphs[index - 1];
             }
-            return 0;
+            if(leftChar && typeof leftChar.x === "number" && typeof leftChar.width === "number") {
+                return leftChar.x + leftChar.width + 1 + padding;
+            }
         }
-
-        if(index >= this.textSprite.children.length) {
-            leftChar = this.textSprite.children[this.textSprite.children.length - 1]
-        } else {
-            leftChar = this.textSprite.children[index - 1];
+        const layoutPositions = this.resolveCaretPositionsFromLayout();
+        if(!layoutPositions.length || index <= 0) {
+            return padding;
         }
+        const clamped = Math.min(index, layoutPositions.length);
+        const cursorPos = layoutPositions[clamped - 1] ?? 0;
         // get the position of character to left plus 1 pixel for padding
-        return leftChar.x + leftChar.width + 1 + this.styleOptions.xPadding;
+        return cursorPos + padding + 1;
     }
 
     public setCursor(index: number) {
@@ -394,8 +508,9 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
             return 0;
         }
 
-        for(let i = 0; i < this.textSprite.children.length; i++) {
-            const charChild = this.textSprite.children[i] as any;
+        const glyphs = this.getGlyphs();
+        for(let i = 0; i < glyphs.length; i++) {
+            const charChild = glyphs[i] as any;
             if(charChild.x + charChild.width > x) {
                 // click was on right side of character, current cursor index becomes i+1
                 if(charChild.x + (charChild.width / 2) < x) {
@@ -405,7 +520,7 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
                 }
             }
         }
-        return this.textSprite.children.length;
+        return glyphs.length;
     }
 
     public getSelectedChars() {
@@ -540,7 +655,7 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
     public focus() {
         if(!this.inFocus) {
-            document.addEventListener('mousedown', this.checkForOutsideClick);
+            document.addEventListener('pointerdown', this.checkForOutsideClick, true);
             this.inFocus = true;
             this.startCursorAnimation();
             this.emit('focus');
@@ -550,7 +665,7 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
     public blur() {
         if(this.inFocus) {
-            document.removeEventListener('mousedown', this.checkForOutsideClick);
+            document.removeEventListener('pointerdown', this.checkForOutsideClick, true);
             this.inFocus = false;
             this.stopCursorAnimation();
             this.clearRange();
@@ -580,19 +695,101 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
             } else {
                 this._text = value;
                 this.textSprite.text = value;
-                if(this._text === "" && this.textSprite.children) {
-                    this.textSprite.children.forEach(child => {
-                        this.textSprite.removeChild(child);
+                this.invalidateCaretPositions();
+                if(this._text === "") {
+                    this.getGlyphs().forEach(child => {
+                        if(child.parent === this.textSprite) {
+                            this.textSprite.removeChild(child);
+                        }
                     })
                 }
                 
-                this.textSprite.updateTransform();                   
+                if(getPixiVersion() < 8 && typeof this.textSprite.updateTransform === "function") {
+                    this.textSprite.updateTransform();
+                }
                 this.emit('change', value);
                 this.onChangeHandler(value);
                 return true;
             }
         }
         return false;
+    }
+
+    private getGlyphs(): PIXI.DisplayObject[] {
+        if(!this.textSprite) {
+            return [];
+        }
+        return getBitmapTextGlyphs(this.textSprite);
+    }
+
+    private invalidateCaretPositions() {
+        this.caretPositionsCacheKey = null;
+        this.caretPositionsCache = null;
+    }
+
+    private resolveCaretPositionsFromLayout(): number[] {
+        const text = this.textSprite?.text ?? '';
+        if(this.caretPositionsCache && this.caretPositionsCacheKey === text) {
+            return this.caretPositionsCache;
+        }
+        const glyphs = this.getGlyphs();
+        if(glyphs.length) {
+            const positions = glyphs.map((glyph: any) => {
+                const width = typeof glyph.width === "number" ? glyph.width : 0;
+                const x = typeof glyph.x === "number" ? glyph.x : 0;
+                return x + width;
+            });
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = positions;
+            return positions;
+        }
+        if(getPixiVersion() < 8) {
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = [];
+            return this.caretPositionsCache;
+        }
+        const pixiAny = PIXI as any;
+        const manager = pixiAny?.BitmapFontManager;
+        if(!manager || typeof manager.measureText !== "function" || typeof manager.getFont !== "function") {
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = [];
+            return this.caretPositionsCache;
+        }
+        const style = this.textSprite?.style ?? (this.textSprite as any)?._style ?? null;
+        if(!style) {
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = [];
+            return this.caretPositionsCache;
+        }
+        try {
+            const layout = manager.measureText(text, style) ?? null;
+            const font = manager.getFont(text, style) ?? null;
+            const scale = layout?.scale ?? 1;
+            const lines = layout?.lines ?? [];
+            const positions: number[] = [];
+            if(font && lines.length) {
+                let globalIndex = 0;
+                for(const line of lines) {
+                    const chars = line.chars ?? [];
+                    for(let i = 0; i < line.charPositions.length; i++, globalIndex++) {
+                        const current = line.charPositions[i];
+                        const char = chars[i] ?? text[globalIndex] ?? ' ';
+                        const charData = font.chars?.[char] ?? font.chars?.[' '] ?? null;
+                        const nextStart = i + 1 < line.charPositions.length
+                            ? line.charPositions[i + 1]
+                            : current + (charData?.xAdvance ?? font.lineHeight ?? 0);
+                        positions[globalIndex] = nextStart * scale;
+                    }
+                }
+            }
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = positions;
+            return positions;
+        } catch (error) {
+            this.caretPositionsCacheKey = text;
+            this.caretPositionsCache = [];
+            return this.caretPositionsCache;
+        }
     }
 
     public change(value) : boolean {
