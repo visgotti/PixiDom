@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TextField Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>TextField Component</h1>
+            <p>Text input with cursor, selection, and full keyboard support.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Text cursor with blinking animation</li>
+                        <li>Text selection and copying</li>
+                        <li>Keyboard input handling</li>
+                        <li>Customizable styling and borders</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>TextField Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// prop(label, options) returns a (possibly overridden) options object that
+// you pass into the component. Edits made in the Prop Table re-run the code
+// with the new values, so changes flow into the live preview.
+const { TextField, FontLoader } = PIXI_DOM;
+
+stage.removeChildren();
+
+const fontLoader = new FontLoader();
+fontLoader.add('small', '../../fonts/small.fnt');
+
+fontLoader.load(() => {
+    const field1Opts = prop('TextField 1: Default style', {
+      font: 'small', text: 'Enter your name...', x: 50, y: 50,
+      width: '300px', height: '40px',
+      backgroundColor: 0x2a2a2a, borderColor: 0x4a90d9, borderWidth: 2,
+      fontColor: 0xffffff, cursorColor: 0x4a90d9,
+      xPadding: 10, yPadding: 10,
+    });
+    const field1 = new TextField(field1Opts.font, field1Opts);
+    field1.text = field1Opts.text;
+    field1.position.set(field1Opts.x, field1Opts.y);
+    stage.addChild(field1);
+
+    const field2Opts = prop('TextField 2: Email-style', {
+      font: 'small', text: 'email@example.com', x: 50, y: 120,
+      width: '350px', height: '40px',
+      backgroundColor: 0x1a1a1a, borderColor: 0x4cd964, borderWidth: 2,
+      fontColor: 0xe0e0e0, cursorColor: 0x4cd964,
+      xPadding: 12, yPadding: 10,
+    });
+    const field2 = new TextField(field2Opts.font, field2Opts);
+    field2.text = field2Opts.text;
+    field2.position.set(field2Opts.x, field2Opts.y);
+    stage.addChild(field2);
+
+    const field3Opts = prop('TextField 3: Password-style', {
+      font: 'small', text: 'Password', x: 50, y: 190,
+      width: '280px', height: '35px',
+      backgroundColor: 0x333333, borderColor: 0xff9500, borderWidth: 1,
+      fontColor: 0xffffff, cursorColor: 0xff9500,
+      xPadding: 8, yPadding: 8,
+    });
+    const field3 = new TextField(field3Opts.font, field3Opts);
+    field3.text = field3Opts.text;
+    field3.position.set(field3Opts.x, field3Opts.y);
+    stage.addChild(field3);
+});`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

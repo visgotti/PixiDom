@@ -23,8 +23,10 @@ export default defineConfig({
       name: 'PIXI_DOM',
       formats: ['es', 'cjs', 'umd'],
       fileName: (format) => {
+        // Use `.mjs` so Node treats the ESM file as ESM regardless of the
+        // package.json `type` field (we stay CJS-default to preserve scripts).
         if (format === 'es') {
-          return 'index.es.js';
+          return 'index.es.mjs';
         }
         if (format === 'cjs') {
           return 'index.cjs';
@@ -32,6 +34,9 @@ export default defineConfig({
         return 'pixidom.js';
       },
     },
+    // ES2022 is the floor of "modern enough for Node 16.6+ and all evergreen browsers".
+    // Pinning explicitly so consumers don't get surprises if Vite's default shifts.
+    target: 'es2022',
     sourcemap: true,
     outDir,
     emptyOutDir: true,

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixiDom - Interactive UI Components for PixiJS</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/atom-one-dark.min.css">
+    <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+</head>
+<body>
+    <header class="hero">
+        <div class="container">
+            <h1>PixiDom</h1>
+            <p class="tagline">Interactive UI Components for PixiJS</p>
+            <p class="description">Build text inputs, buttons, toggles, sliders, and scrollable lists directly in your PixiJS applications.</p>
+            <div class="hero-buttons">
+                <a href="https://github.com/visgotti/PixiDom" class="btn btn-primary">GitHub</a>
+                <a href="https://www.npmjs.com/package/pixidom.js" class="btn btn-secondary">npm install pixidom.js</a>
+                <a href="./docs/index.html" class="btn btn-outline">API Docs</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="demos">
+            <h2>Components</h2>
+            <p class="demos-description">Click any tile to launch the live demo with PixiJS v4–v8</p>
+
+            <div class="demo-grid">
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="button"></canvas></div>
+                    <h3>Button</h3>
+                    <p>Customizable buttons with hover and pressed states.</p>
+                    <a class="demo-card-link" href="./demos/button/index.html">Edit in demo →</a>
+                </article>
+
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="toggle"></canvas></div>
+                    <h3>Toggle</h3>
+                    <p>Animated toggle switches with optional labels.</p>
+                    <a class="demo-card-link" href="./demos/toggle/index.html">Edit in demo →</a>
+                </article>
+
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="slider"></canvas></div>
+                    <h3>Slider</h3>
+                    <p>Draggable value slider with customizable appearance.</p>
+                    <a class="demo-card-link" href="./demos/slider/index.html">Edit in demo →</a>
+                </article>
+
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="textfield"></canvas></div>
+                    <h3>TextField</h3>
+                    <p>Text input with cursor, selection, and keyboard handling.</p>
+                    <a class="demo-card-link" href="./demos/textfield/index.html">Edit in demo →</a>
+                </article>
+
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="scrolllist"></canvas></div>
+                    <h3>ScrollList</h3>
+                    <p>Virtualized scrollable lists with optional scrollbar.</p>
+                    <a class="demo-card-link" href="./demos/scrolllist/index.html">Edit in demo →</a>
+                </article>
+
+                <article class="demo-card">
+                    <div class="demo-preview"><canvas data-preview="element"></canvas></div>
+                    <h3>PixiElement</h3>
+                    <p>Base class for interactive elements with drag and swipe gestures.</p>
+                    <a class="demo-card-link" href="./demos/element/index.html">Edit in demo →</a>
+                </article>
+            </div>
+        </section>
+
+        <section class="installation">
+            <h2>Installation</h2>
+            <div class="code-block">
+                <pre><code class="language-bash">npm install pixidom.js</code></pre>
+            </div>
+            <h3>ES Modules</h3>
+            <div class="code-block">
+                <pre><code class="language-javascript">import { TextField, Button, Toggle, Slider, ScrollList } from 'pixidom.js';</code></pre>
+            </div>
+            <h3>UMD (Browser)</h3>
+            <div class="code-block">
+                <pre><code class="language-html">&lt;script src="https://unpkg.com/pixi.js@8"&gt;&lt;/script&gt;
+&lt;script src="https://unpkg.com/pixidom.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const { TextField, Button, Toggle } = PIXI_DOM;
+&lt;/script&gt;</code></pre>
+            </div>
+        </section>
+
+        <section class="compatibility">
+            <h2>PixiJS Compatibility</h2>
+            <table class="compat-table">
+                <thead>
+                    <tr>
+                        <th>PixiJS Version</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>v4.x</td><td>✅ Supported</td></tr>
+                    <tr><td>v5.x</td><td>✅ Supported</td></tr>
+                    <tr><td>v6.x</td><td>✅ Supported</td></tr>
+                    <tr><td>v7.x</td><td>✅ Supported</td></tr>
+                    <tr><td>v8.x</td><td>✅ Supported</td></tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>
+                <a href="https://github.com/visgotti/PixiDom">GitHub</a> •
+                <a href="https://www.npmjs.com/package/pixidom.js">NPM</a> •
+                <a href="./docs/index.html">API Documentation</a> •
+                MIT License
+            </p>
+        </div>
+    </footer>
+    <script>hljs.highlightAll();</script>
+
+    <script src="./lib/pixi8.js"></script>
+    <script src="../dist/pixidom.js"></script>
+    <script>
+    (async function initPreviews() {
+        const W = 280, H = 220, BG = 0x1a1f26;
+
+        const builders = {
+            button(stage) {
+                const { Button } = PIXI_DOM;
+                const btn = new Button("Click Me!", {
+                    font: 'Arial',
+                    useBitmapText: false,
+                    fontSize: 14,
+                    defaultStyle: { width: 140, height: 44, backgroundColor: 0x4a90d9, textColor: 0xffffff, borderRadius: 10 },
+                    hoverStyle:   { width: 140, height: 44, backgroundColor: 0x357abd, textColor: 0xffffff, borderRadius: 10 },
+                    pressedStyle: { width: 140, height: 44, backgroundColor: 0x2a5f8f, textColor: 0xffffff, borderRadius: 10 },
+                });
+                btn.position.set((W - 140) / 2, (H - 44) / 2);
+                stage.addChild(btn);
+            },
+            toggle(stage) {
+                const { Toggle } = PIXI_DOM;
+                const t = new Toggle({
+                    width: 80, height: 40, borderRadius: 50,
+                    onBackgroundColor: 0x4a90d9,
+                    offBackgroundColor: 0x666666,
+                    onCircleColor: 0xffffff,
+                    offCircleColor: 0xffffff,
+                });
+                t.position.set((W - 80) / 2, (H - 40) / 2);
+                stage.addChild(t);
+            },
+            slider(stage) {
+                const { Slider } = PIXI_DOM;
+                const s = new Slider({
+                    width: 220, height: 8, handleRadius: 12,
+                    trackColor: 0x333333, handleColor: 0x4a90d9, activeColor: 0x4a90d9,
+                    min: 0, max: 100, value: 50,
+                });
+                s.position.set((W - 220) / 2, H / 2 - 4);
+                stage.addChild(s);
+            },
+            async textfield(stage) {
+                const { TextField, FontLoader } = PIXI_DOM;
+                const loader = new FontLoader();
+                loader.add('small', './fonts/small.fnt');
+                await new Promise((res) => loader.load(res));
+                const f = new TextField('small', {
+                    width: '240px', height: '40px',
+                    backgroundColor: 0x2a2a2a, borderColor: 0x4a90d9, borderWidth: 2,
+                    fontColor: 0xffffff, cursorColor: 0x4a90d9,
+                    xPadding: 10, yPadding: 10,
+                });
+                f.text = 'Click to type...';
+                f.position.set((W - 240) / 2, (H - 40) / 2);
+                stage.addChild(f);
+            },
+            scrolllist(stage) {
+                const { ScrollList } = PIXI_DOM;
+                const items = Array.from({ length: 20 }, (_, i) => {
+                    const c = new PIXI.Container();
+                    const bg = new PIXI.Graphics();
+                    bg.beginFill(i % 2 === 0 ? 0x2a2a2a : 0x1f1f1f);
+                    bg.drawRect(0, 0, 240, 32);
+                    bg.endFill();
+                    c.addChild(bg);
+                    const t = new PIXI.Text(`Item ${i + 1}`, { fill: 0xffffff, fontSize: 14 });
+                    t.position.set(10, 8);
+                    c.addChild(t);
+                    return { container: c };
+                });
+                const list = new ScrollList({
+                    width: '260px', height: '200px',
+                    scrollBarOptions: {
+                        width: 6, backgroundColor: 0x2a2a2a,
+                        scrollerOptions: { color: 0x4a90d9 },
+                    },
+                }, items);
+                list.position.set((W - 260) / 2, (H - 200) / 2);
+                stage.addChild(list);
+            },
+            element(stage) {
+                const { PixiElement } = PIXI_DOM;
+                const elements = [];
+                const size = 60;
+                const make = (color, x, y) => {
+                    const el = new PixiElement();
+                    const g = new PIXI.Graphics();
+                    g.beginFill(color);
+                    g.drawRoundedRect(0, 0, size, size, 10);
+                    g.endFill();
+                    el.addChild(g);
+                    el.position.set(x, y);
+                    el._w = size; el._h = size;
+
+                    let sgx = 0, sgy = 0, sex = 0, sey = 0;
+                    el.onDragStart((e) => {
+                        const p = e.data?.global ?? e.global;
+                        sgx = p.x; sgy = p.y;
+                        sex = el.position.x; sey = el.position.y;
+                    });
+                    el.onDragMove((e) => {
+                        const p = e.data?.global ?? e.global;
+                        let tx = Math.max(0, Math.min(sex + (p.x - sgx), W - el._w));
+                        let ty = Math.max(0, Math.min(sey + (p.y - sgy), H - el._h));
+                        for (const o of elements) {
+                            if (o === el) continue;
+                            const yOverlap = el.position.y < o.position.y + o._h && el.position.y + el._h > o.position.y;
+                            if (yOverlap && tx < o.position.x + o._w && tx + el._w > o.position.x) {
+                                tx = el.position.x + el._w <= o.position.x ? o.position.x - el._w : o.position.x + o._w;
+                            }
+                        }
+                        el.position.x = tx;
+                        for (const o of elements) {
+                            if (o === el) continue;
+                            const xOverlap = el.position.x < o.position.x + o._w && el.position.x + el._w > o.position.x;
+                            if (xOverlap && ty < o.position.y + o._h && ty + el._h > o.position.y) {
+                                ty = el.position.y + el._h <= o.position.y ? o.position.y - el._h : o.position.y + o._h;
+                            }
+                        }
+                        el.position.y = ty;
+                    });
+
+                    elements.push(el);
+                    stage.addChild(el);
+                };
+                make(0x4a90d9, 30, 40);
+                make(0x4cd964, 110, 40);
+                make(0xff9500, 190, 40);
+                make(0xe85d75, 70, 120);
+                make(0xa974ff, 150, 120);
+            },
+        };
+
+        const canvases = document.querySelectorAll('canvas[data-preview]');
+        for (const canvas of canvases) {
+            try {
+                canvas.width = W;
+                canvas.height = H;
+                const app = await PIXI_DOM.PixiAdapter.createApp(canvas, { width: W, height: H, backgroundColor: BG });
+                await builders[canvas.dataset.preview]?.(app.stage);
+            } catch (err) {
+                console.error('Preview failed:', canvas.dataset.preview, err);
+            }
+        }
+    })();
+    </script>
+</body>
+</html>

@@ -1,35 +1,87 @@
 import {clamp, parseLengthMeasurements} from "../../utils";
-export type ScrollItemOptions = {
-    container: PIXI.Container,
-    onClick?: Function,
-}
+import { normalizeColor, type Color, type NormalizedColor } from "../../color";
 import tweenFunctions from 'tween-functions';
 
 import { PixiElement } from "../../Element";
-import { ValidMeasurement } from "../../types";
+import type { ValidMeasurement } from "../../types";
 
 import {ScrollBar, ScrollBarStyleOptions} from './ScrollBar';
-import {DestroyOptions} from "pixi.js";
+import type {DestroyOptions} from "pixi.js";
 
-export type ScrollStyleOptions = {
-    width?: ValidMeasurement,
-    height?: ValidMeasurement,
-    backgroundColor: number,
-    dividerColor: number,
-    dividerPixelHeight: number,
-    dividerPercentWidth: number,
-    dividerTopPadding: number,
-    dividerBottomPadding: number,
-    borderOpacity: number,
-    xPadding: number,
-    yPadding: number,
-    scrollBarOptions?: ScrollBarStyleOptions,
+type EasingFn = (time: number, begin: number, end: number, duration: number) => number;
+type ScrollChild = (PIXI.Container | PIXI.Sprite | PIXI.Graphics | PIXI.Text) & { just_added?: boolean };
+
+/**
+ * Configuration for individual scroll list items.
+ */
+export type ScrollItemOptions = {
+    /** The PIXI container to display as the list item */
+    container: PIXI.Container,
+    /** Optional click handler for the item */
+    onClick?: (event: PIXI.FederatedPointerEvent) => void,
 }
 
+const resolveLength = (raw: unknown, fallback: number = 0): number => {
+    const parsed = parseLengthMeasurements(raw);
+    return parsed.valid ? parsed.value : fallback;
+};
+
+/**
+ * Styling options for the ScrollList component.
+ */
+export type ScrollStyleOptions = {
+  /** Width of the scroll list (e.g., '300px') */
+  width?: ValidMeasurement,
+  /** Height of the scroll list (e.g., '400px') */
+  height?: ValidMeasurement,
+  /** Background color. Accepts any {@link Color} format. */
+  backgroundColor?: Color,
+  /** Color of item dividers. Accepts any {@link Color} format. */
+  dividerColor?: Color,
+  /** Height of dividers in pixels */
+  dividerPixelHeight?: number,
+  /** Width of dividers as percentage (0-100) */
+  dividerPercentWidth?: number,
+  /** Padding above dividers */
+  dividerTopPadding?: number,
+  /** Padding below dividers */
+  dividerBottomPadding?: number,
+  /** Border opacity (0-1) */
+  borderOpacity?: number,
+  /** Horizontal padding */
+  xPadding?: number,
+  /** Vertical padding */
+  yPadding?: number,
+  /** Optional scrollbar configuration */
+  scrollBarOptions?: ScrollBarStyleOptions,
+}
+
+/**
+ * Default style options for ScrollList.
+ */
+const defaultScrollStyleOptions: Partial<ScrollStyleOptions> = {
+  backgroundColor: 0x1a1a1a,
+  dividerColor: 0x333333,
+  dividerPixelHeight: 1,
+  dividerPercentWidth: 100,
+  dividerTopPadding: 0,
+  dividerBottomPadding: 0,
+  borderOpacity: 1,
+  xPadding: 0,
+  yPadding: 0,
+};
+
+/**
+ * Performance-related options for ScrollList.
+ */
 export type ScrolllPerformanceOptions = {
+    /** Disable mouse wheel scrolling */
     disableScrollWheelScroll: boolean;
+    /** Disable touch/drag scrolling */
     disableTouchScroll : boolean;
+    /** Buffer in pixels for virtualization visibility */
     visibilityBuffer: number;
+    /** Time in ms between visibility adjustments */
     adjustVisibilityTime: number;
 }
 const defaultPerformanceOptions = {
@@ -39,14 +91,47 @@ const defaultPerformanceOptions = {
     adjustVisibilityTime: 130,
 }
 
+/**
+ * Virtualized scrollable list component with optional scrollbar support.
+ * Supports touch scrolling, mouse wheel, and swipe gestures with momentum.
+ * 
+ * @example
+ * ```typescript
+ * import { ScrollList } from 'pixidom.js';
+ * 
+ * const items = Array.from({ length: 100 }, (_, i) => {
+ *   const container = new PIXI.Container();
+ *   const text = new PIXI.Text(`Item ${i + 1}`);
+ *   container.addChild(text);
+ *   return { container };
+ * });
+ * 
+ * const scrollList = new ScrollList(
+ *   {
+ *     width: '300px',
+ *     height: '400px',
+ *     backgroundColor: 0x1a1f26,
+ *     dividerColor: 0x30363d,
+ *     dividerPixelHeight: 1,
+ *     scrollBarOptions: {
+ *       width: 8,
+ *       scrollerColor: 0x4a90d9,
+ *     },
+ *   },
+ *   items
+ * );
+ * 
+ * stage.addChild(scrollList);
+ * ```
+ * 
+ * @extends PIXI.Container
+ */
 export class ScrollList extends PIXI.Container {
     private scrollStyleOptions: ScrollStyleOptions;
-    private scrollItemsById: any = {};
-    private options: Array<PIXI.Container> = [];
+    private resolvedBackgroundColor: NormalizedColor;
     private po: PixiElement = new PixiElement();
 
-    private scrollBar: ScrollBar;
-    private scrollbarScroll: PIXI.Graphics;
+    private scrollBar?: ScrollBar;
     private scrollRect: PixiElement = new PixiElement();
     private scrollDuration: number = 0;
 
@@ -54,8 +139,8 @@ export class ScrollList extends PIXI.Container {
 
     private _currentScroll: number = 0;
     private lastScroll: number = 0;
-    private __width: number;
-    private __height: number;
+    private __width: number = 0;
+    private __height: number = 0;
 
     private pointerdownStart: number = 0;
     private startingVisibleChildIndex: number = 0;
@@ -63,18 +148,17 @@ export class ScrollList extends PIXI.Container {
 
     private scrollCurrentDur: number = 0;
     private currentAdjustVisibilityDelta: number = 0;
-    private animationFrame: any = null;
+    private animationFrame: number | null = null;
     private nextItemY: number = 0;
     private scrollToDest: number = 0;
     private listContainer: PixiElement = new PixiElement();
-    private listRect: PIXI.Graphics = new PIXI.Graphics();
+    private backgroundRect: PIXI.Graphics = new PIXI.Graphics();
     private scrollLength: number = 0;
     private adjustedIndex: number = 0;
     maxHeight: number = 0;
-    private lastOverOption: PIXI.Container = null;
-    private lastDownOption: PIXI.Container = null;
     public freezeScroll: boolean = false;
-    private tweenFunc: Function;
+    private tweenFunc?: EasingFn;
+    private options: Array<ScrollChild> = [];
     private _needsUpdateScoller : boolean = true;
     private _registeredScrollEvent : boolean = false;
 
@@ -83,31 +167,30 @@ export class ScrollList extends PIXI.Container {
         super();
         this.handleScrollWheelScroll = this.handleScrollWheelScroll.bind(this);
 
+        // Apply defaults to style options
+        const mergedStyleOptions: ScrollStyleOptions = { ...defaultScrollStyleOptions, ...scrollStyleOptions };
+
         this.interactive = true;
         this.interactiveChildren = true;
-        this.__width = parseLengthMeasurements(scrollStyleOptions.width).value;
-        this.__height = parseLengthMeasurements(scrollStyleOptions.height).value;
+        this.__width = resolveLength(mergedStyleOptions.width);
+        this.__height = resolveLength(mergedStyleOptions.height);
 
-        this.performanceOptions = scrollPerformanceOptions ? scrollPerformanceOptions : { ...defaultPerformanceOptions };
-        if(scrollPerformanceOptions) {
-            for(let key in defaultPerformanceOptions) {
-                if(!scrollPerformanceOptions.hasOwnProperty(key)) {
-                    this.performanceOptions[key] = defaultPerformanceOptions[key];
-                }
-            }
-        }
-        this.scrollbarScroll = new PIXI.Graphics();
-        this.scrollStyleOptions = scrollStyleOptions;
+        this.performanceOptions = scrollPerformanceOptions
+            ? { ...defaultPerformanceOptions, ...scrollPerformanceOptions }
+            : { ...defaultPerformanceOptions };
+        this.scrollStyleOptions = mergedStyleOptions;
+        this.resolvedBackgroundColor = normalizeColor(mergedStyleOptions.backgroundColor ?? 0x0fffff);
         this.scrollLength = 0;
         this.scrollMask = new PIXI.Graphics();
         this.scrollMask.beginFill(0xFFFFFF);
         this.scrollMask.drawRect(0, 0, this.__width, this.__height);
         this.scrollMask.endFill();
 
-        this.listRect.beginFill(0xFFFFFF, 0);
-        this.listRect.drawRect(0, 0, this.__width, this.__height);
-        this.listRect.endFill();
-        this.scrollRect.addChild(this.listRect);
+        this.backgroundRect.beginFill(this.resolvedBackgroundColor.value, this.resolvedBackgroundColor.alpha);
+        this.backgroundRect.drawRect(0, 0, this.__width, this.__height);
+        this.backgroundRect.endFill();
+        this.addChild(this.backgroundRect);
+      //  this.scrollRect.addChild(this.backgroundRect);
 
      //   this.scrollMask.hitArea = new PIXI.Rectangle(0, 0, this.__width, this.__height);
 
@@ -116,10 +199,10 @@ export class ScrollList extends PIXI.Container {
         this.po.interactive = true;
         this.po.mask = this.scrollMask;
 
-     //   this.addChild(this.scrollRect);
+        this.addChild(this.scrollRect);
 
-        let lastScrollY;
-        let heldTimeout = null;
+        let lastScrollY: number = 0;
+        let heldTimeout: ReturnType<typeof setTimeout> | null = null;
 
         if(!this.performanceOptions.disableScrollWheelScroll) {
             this.registerScrollEvents();
@@ -150,26 +233,28 @@ export class ScrollList extends PIXI.Container {
             });
 
             this.po.onSwipe(this.applySwipe.bind(this));
-            this.po.onDragStart(event => {
+            this.po.onDragStart((event) => {
                 if(this.scrollBar && this.scrollBar.scrolling) return;
                 if(this.freezeScroll) return;
-                this.tweenFunc = tweenFunctions.easeOutElastic;
+                this.tweenFunc = tweenFunctions.easeOutElastic as EasingFn;
                 this.scrollLength = 0;
                 this.scrollCurrentDur = 0;
                 this.scrollDuration = 0;
                 this.currentAdjustVisibilityDelta = 0;
-                lastScrollY = event.data.global.y;
+                lastScrollY = event.data?.global?.y ?? event.global?.y ?? 0;
             });
-            this.po.onDragMove(event => {
+            this.po.onDragMove((event) => {
                 if(this.scrollBar && this.scrollBar.scrolling) return;
                 if(this.freezeScroll) return;
-                const diff =  event.data.global.y - lastScrollY;
-                lastScrollY = event.data.global.y;
+                const y = event.data?.global?.y ?? event.global?.y ?? lastScrollY;
+                const diff = y - lastScrollY;
+                lastScrollY = y;
+                if(diff === 0) return;
                 this.applyDrag(diff);
             });
-            this.po.onDragEnd(event => {
+            this.po.onDragEnd(() => {
                 if(this.scrollBar && this.scrollBar.scrolling) return;
-                this.adjustVisibility(null, true);
+                this.adjustVisibility(0, true);
             });
         }
         if(scrollStyleOptions.scrollBarOptions) {
@@ -183,20 +268,33 @@ export class ScrollList extends PIXI.Container {
         }
 
        // this.po.mask = this.scrollMask;
+        if (scrollItemOptions && scrollItemOptions.length) {
+            this.addScrollItems(
+                scrollItemOptions.map((opt) => {
+                    if (opt.onClick) {
+                        opt.container.interactive = true;
+                        opt.container.buttonMode = true;
+                        opt.container.on('pointertap', opt.onClick);
+                    }
+                    return opt.container;
+                }),
+            );
+        }
         this.redraw();
     }
 
     private handleScrollWheelScroll(event : WheelEvent) {
+        if (event.cancelable) event.preventDefault();
         this.currentScroll += event.deltaY;
         this.adjustVisibility(null, true);
     }
 
-    public destroy(options?: DestroyOptions | boolean) {
+    public override destroy(options?: DestroyOptions | boolean) {
         if(this._registeredScrollEvent) {
             document.removeEventListener('wheel', this.handleScrollWheelScroll);
             this._registeredScrollEvent = false;
         }
-        super.destroy(options)
+        super.destroy(options);
     }
 
     get utilizedLength() : number {
@@ -210,7 +308,7 @@ export class ScrollList extends PIXI.Container {
     private registerScrollEvents() {
         this.once('pointerover', () => {
             this._registeredScrollEvent = true;
-            document.addEventListener('wheel', this.handleScrollWheelScroll);
+            document.addEventListener('wheel', this.handleScrollWheelScroll, { passive: false });
             this.once('pointerout', () => {
                 document.removeEventListener('wheel', this.handleScrollWheelScroll);
                 this._registeredScrollEvent = false;
@@ -242,17 +340,17 @@ export class ScrollList extends PIXI.Container {
         this.freezeScroll = freeze;
     }
 
-    private _containsPoint(container: PIXI.Container, p) {
-        p = this.toLocal(p);
+    private _containsPoint(container: PIXI.Container, p: PIXI.Point | { x: number; y: number }) {
+        const local = this.toLocal(p);
         const ix = 0;
         const ax = this.__width;
         const iy = container.y - this.currentScroll;
         const ay = iy + container.height;
 
-        return (ix <= p.x && p.x <= ax && iy <= p.y && p.y <= ay)
+        return (ix <= local.x && local.x <= ax && iy <= local.y && local.y <= ay);
     }
 
-    public resize(w, h) {
+    public resize(w: number, h: number) {
         this.__width = w;
         this.__height = h;
         this.scrollMask.clear();
@@ -261,9 +359,9 @@ export class ScrollList extends PIXI.Container {
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();
 
-        this.listRect.clear();
-        this.listRect
-            .beginFill(this.scrollStyleOptions.backgroundColor)
+        this.backgroundRect.clear();
+        this.backgroundRect
+            .beginFill(this.resolvedBackgroundColor.value, this.resolvedBackgroundColor.alpha)
             .drawRect(0, 0, this.__width, this.__height)
             .endFill();
 
@@ -288,7 +386,8 @@ export class ScrollList extends PIXI.Container {
         }
     }
 
-    private adjustVisibility(delta, force=false) {
+    private adjustVisibility(delta: number | null, force = false) {
+        if (delta === null) delta = 0;
         if(force) {
             this.currentAdjustVisibilityDelta = 0;
         } else {
@@ -319,16 +418,16 @@ export class ScrollList extends PIXI.Container {
                 } else {
                     option.emit('show');
                 }
-                if(option['just_added']) {
-                    delete option['just_added'];
+                if(option.just_added) {
+                    delete option.just_added;
                 }
-            } else if (option['just_added']) {
+            } else if (option.just_added) {
                 if(option.visible) {
                     option.emit('show');
                 } else {
                     option.emit('hide');
                 }
-                delete option['just_added'];
+                delete option.just_added;
             }
 
             if(!option.visible && !wasVisible && setFirstVisible) {
@@ -363,7 +462,9 @@ export class ScrollList extends PIXI.Container {
             this.adjustVisibility(null, true);
             return null;
         }
-        this.currentScroll = this.tweenFunc(this.scrollCurrentDur, this.lastScroll, this.scrollToDest, this.scrollDuration);
+        if (this.tweenFunc) {
+            this.currentScroll = this.tweenFunc(this.scrollCurrentDur, this.lastScroll, this.scrollToDest, this.scrollDuration);
+        }
 
         this.adjustVisibility(delta);
 
@@ -374,7 +475,7 @@ export class ScrollList extends PIXI.Container {
         });
     }
 
-    private applyDrag(difference) {
+    private applyDrag(difference: number) {
         if(this.animationFrame) return;
 
         // scroll height is less than total height.. no need to scroll anything.
@@ -399,12 +500,11 @@ export class ScrollList extends PIXI.Container {
         this.scrollDuration += Math.abs(difference);
         const distanceToTraverse = Math.abs(this._currentScroll - this.scrollToDest);
         const maxTime = distanceToTraverse > 1000 ? 4000 : distanceToTraverse > 700 ? 3000 : distanceToTraverse > 500  ? 2000 : distanceToTraverse > 200 ? 1000 : 400;
-
         this.scrollDuration = Math.min(this.scrollDuration, maxTime);
         this.animationFrame = this.animateScroll(Date.now());
     }
 
-    private applySwipe(power) {
+    private applySwipe(power: number) {
         if(Math.abs(power) < 1) return;
 
         if(this.animationFrame) {
@@ -412,7 +512,7 @@ export class ScrollList extends PIXI.Container {
             this.animationFrame = null;
         }
 
-        this.tweenFunc = tweenFunctions.easeOutCubic;
+        this.tweenFunc = tweenFunctions.easeOutCubic as EasingFn;
         this.lastScroll = this._currentScroll;
         this.scrollCurrentDur = 0;
         const absPower = Math.abs(power);
@@ -457,9 +557,10 @@ export class ScrollList extends PIXI.Container {
         return this._currentScroll;
     }
 
-    public addScrollItems(containers: Array<PIXI.Container>) {
-        containers.forEach(c => {
-            c['just_added'] = true;
+    public addScrollItems(containers: Array<PIXI.Container | PIXI.Sprite | PIXI.Graphics | PIXI.Text>) {
+        containers.forEach((raw) => {
+            const c = raw as ScrollChild;
+            c.just_added = true;
             c.visible = true;
             this.po.addChild(c);
             if(c.interactive) {
@@ -472,8 +573,8 @@ export class ScrollList extends PIXI.Container {
         this.adjustVisibility(null, true);
         this.redraw();
     }
-    public addScrollItem(container: PIXI.Container) {
-        this.addScrollItems([container])
+    public addScrollItem(container: PIXI.Container | PIXI.Sprite | PIXI.Graphics | PIXI.Text) {
+        this.addScrollItems([container]);
     }
 
     private recalculateHeight() {
@@ -484,37 +585,30 @@ export class ScrollList extends PIXI.Container {
         this.maxHeight = height;
     }
 
-    public spliceScrollItems(fromIndex, toIndex?, destroyItem=true) {
-        toIndex = toIndex >= 0 ? toIndex : this.options.length;
-        const indexArray = [];
-        for(let i = fromIndex; i < toIndex; i++) {
+    public spliceScrollItems(fromIndex: number, toIndex?: number, destroyItem = true) {
+        const end = typeof toIndex === 'number' && toIndex >= 0 ? toIndex : this.options.length;
+        const indexArray: number[] = [];
+        for(let i = fromIndex; i < end; i++) {
             indexArray.push(i);
         }
         this.removeScrollItems(indexArray, destroyItem);
     }
 
-    public removeScrollItems(indexOrContainer, destroyItem=true) {
-        if(!(Array.isArray(indexOrContainer))) {
-            indexOrContainer = [indexOrContainer]
-        }
+    public removeScrollItems(indexOrContainer: number | ScrollChild | Array<number | ScrollChild>, destroyItem = true) {
+        const list: Array<number | ScrollChild> = Array.isArray(indexOrContainer) ? indexOrContainer : [indexOrContainer];
 
-        const indexesToRemove = [];
-        indexOrContainer.forEach(i => {
-            let container;
-            if (!isNaN(i)) {
-                container = this.options[i];
-            } else {
-                container = indexOrContainer;
-            }
-            const foundOption = this.options.find(o => o === container);
+        const indexesToRemove: number[] = [];
+        list.forEach((entry) => {
+            const container: ScrollChild | undefined = typeof entry === 'number' ? this.options[entry] : entry;
+            const foundOption = this.options.find((o) => o === container);
             if (foundOption) {
                 indexesToRemove.push(this.options.indexOf(foundOption));
 
-                if(foundOption && foundOption.parent === this.po) {
+                if(foundOption.parent === this.po) {
                     this.po.removeChild(foundOption);
                 }
                 if(destroyItem) {
-                    foundOption.destroy({ children: true })
+                    foundOption.destroy({ children: true });
                 }
             }
         });
@@ -537,25 +631,15 @@ export class ScrollList extends PIXI.Container {
     }
 
 
-    private findOptionAtPoint(p) : PIXI.Container {
-        for(let i = this.startingVisibleChildIndex; i <= this.endingVisibleChildIndex; i++) {
-            const opt : PIXI.Container = this.options[i];
-            if(opt.visible && this._containsPoint(opt, p)) {
-                return opt;
-            }
-        }
-        return null;
-    }
-
-
-    private recurseChildren(el, point, foundChildren) {
+    private recurseChildren(el: PIXI.DisplayObject, point: PIXI.Point, foundChildren: Array<PIXI.DisplayObject>): Array<PIXI.DisplayObject> {
         if(el.interactive || el.interactiveChildren) {
-            if(this._containsPoint(el, point)) {
+            if(this._containsPoint(el as PIXI.Container, point)) {
                 if(el.interactive) {
                     foundChildren.push(el);
                 }
-                if(el.interactiveChildren && el.children) {
-                    el.children.forEach(child => {
+                const container = el as PIXI.Container;
+                if(el.interactiveChildren && container.children) {
+                    container.children.forEach((child) => {
                         this.recurseChildren(child, point, foundChildren);
                     });
                 }

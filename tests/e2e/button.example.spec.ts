@@ -8,9 +8,9 @@ test.beforeEach(async ({ page }) => {
   await setupDeterministicEnv(page);
 });
 
-test(`${EXAMPLE_NAME} example renders and matches snapshot`, async ({ page }) => {
-  const pixiVersion = test.info().project.name;
+test(`${EXAMPLE_NAME} example renders and matches snapshot`, async ({ page }, testInfo) => {
+  const pixiVersion = testInfo.project.name;
   await gotoExample(page, EXAMPLE_PATH, pixiVersion);
   await flushAnimationFrames(page);
-  await expectCanvasSnapshot(page, EXAMPLE_NAME);
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, undefined, testInfo);
 });

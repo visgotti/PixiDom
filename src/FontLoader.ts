@@ -36,6 +36,36 @@ class FontLoader {
         }
 
         const pixiAny = PIXI as any;
+        const pixiVersion = getPixiVersion();
+        
+        // For v8+, assets are auto-registered in Cache, but we need to ensure
+        // the alias and alias-bitmap keys are also set
+        if (pixiVersion >= 8) {
+            const cache = pixiAny?.Cache;
+            if (cache && typeof cache.set === 'function') {
+                // Get the font's internal fontFamily name
+                const fontFamily = (asset as any)?.fontFamily;
+                
+                const keysToSet = [alias, `${alias}-bitmap`];
+                // Also register under the font's internal family name if different from alias
+                if (fontFamily && fontFamily !== alias) {
+                    keysToSet.push(fontFamily, `${fontFamily}-bitmap`);
+                }
+                
+                keysToSet.forEach((key) => {
+                    try {
+                        if (!cache.has(key)) {
+                            cache.set(key, asset);
+                        }
+                    } catch (err) {
+                        // ignore cache registration errors
+                    }
+                });
+            }
+            return;
+        }
+        
+        // For v4-v7, use the BitmapFont constructor approach
         const BitmapFontCtor =
             pixiAny?.BitmapFont ??
             pixiAny?.extras?.BitmapFont ??
@@ -189,17 +219,20 @@ class FontLoader {
             if (aliases.length) {
                 const loaded = await assets.load(aliases);
 
-                if (Array.isArray(loaded)) {
-                    loaded.forEach((entry, index) => {
-                        this.registerLoadedFont(aliases[index], entry);
-                    });
-                } else if (loaded && typeof loaded === "object") {
+                // Handle different return types from PIXI.Assets.load
+                // Single alias: returns the asset directly
+                // Multiple aliases: returns an object { alias1: asset1, alias2: asset2 }
+                if (aliases.length === 1) {
+                    // Single font loaded - asset is returned directly
+                    this.registerLoadedFont(aliases[0], loaded);
+                } else if (loaded && typeof loaded === "object" && !Array.isArray(loaded)) {
+                    // Multiple fonts loaded - assets returned as object with alias keys
                     aliases.forEach((alias) => {
                         const value = (loaded as Record<string, unknown>)[alias];
-                        this.registerLoadedFont(alias, value ?? loaded);
+                        if (value) {
+                            this.registerLoadedFont(alias, value);
+                        }
                     });
-                } else {
-                    this.registerLoadedFont(aliases[0], loaded);
                 }
             }
             this.assetQueue = [];
@@ -207,12 +240,10 @@ class FontLoader {
             return;
         }
 
-        if (!this.loader) {
-            this.loader = newPixiLoader();
-        }
+        const loader = this.loader ?? (this.loader = newPixiLoader());
 
         await new Promise<void>((resolve) => {
-            this.loader.load(() => {
+            loader.load(() => {
                 onComplete?.();
                 resolve();
             });

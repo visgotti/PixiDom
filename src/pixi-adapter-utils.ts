@@ -1,3 +1,14 @@
+import { safeColorInt } from './color';
+
+let _global_pixi = typeof window !== 'undefined' ? (window as any).PIXI : null;
+
+export const setGlobalPixi = (pixi: any) => { 
+  if(typeof window !== 'undefined') {
+    (window as any).PIXI = pixi;
+    _global_pixi = pixi;
+  }
+}
+
 
 export interface IPixiLoader {
   baseUrl?: string;
@@ -33,7 +44,6 @@ export const newPixiLoader = (): IPixiLoader => {
   if(getPixiVersion() < 5) {
     return new PIXI.loaders.Loader();
   } else {
-    //@ts-expect-error: PIXI.Loader is used for versions 5 and above
     return new PIXI.Loader();
   }
 }
@@ -226,6 +236,21 @@ const isWebglRenderer = (renderer: any) => {
   return false;
 };
 
+const isWebgpuRenderer = (renderer: any) => {
+  if (!renderer || typeof PIXI === 'undefined') {
+    return false;
+  }
+  const pixiAny = PIXI as any;
+
+  if (renderer.type != null && pixiAny.RendererType) {
+    return renderer.type === pixiAny.RendererType.WEBGPU;
+  }
+  if (pixiAny.WebGPURenderer && renderer instanceof pixiAny.WebGPURenderer) {
+    return true;
+  }
+  return Boolean(renderer.gpu?.device);
+};
+
 const asHtmlCanvas = (value: any): HTMLCanvasElement | null => {
   if (typeof HTMLCanvasElement === 'undefined') {
     return null;
@@ -237,10 +262,172 @@ const toFiniteNumber = (value: any) => {
   return typeof value === 'number' && isFinite(value) ? value : undefined;
 };
 
+/**
+ * Resolves the underlying HTMLCanvasElement from a PIXI renderer across versions.
+ * v8 exposes `renderer.canvas`; v4–v7 use `renderer.view`. Some adapters wrap the view
+ * in an object with `.canvas`, which we also unwrap.
+ */
+export const getRendererCanvas = (renderer: any): HTMLCanvasElement | null => {
+  if (!renderer) return null;
+  return (
+    asHtmlCanvas(renderer.canvas) ??
+    asHtmlCanvas(renderer.view?.canvas) ??
+    asHtmlCanvas(renderer.view) ??
+    null
+  );
+};
+
+export const getRendererResolution = (renderer: any): number => {
+  const r = renderer?.resolution;
+  return typeof r === 'number' && isFinite(r) && r > 0 ? r : 1;
+};
+
+/**
+ * Returns the renderer's stage/screen size in PIXI coordinate units (drawing-buffer
+ * pixels divided by resolution). Falls back to deriving from the canvas if `renderer.screen`
+ * isn't populated (older PIXI builds, or detached renderers).
+ */
+export const getRendererScreenSize = (
+  renderer: any,
+  canvas?: HTMLCanvasElement | null,
+): { width: number; height: number } => {
+  const screen = renderer?.screen;
+  const sw = toFiniteNumber(screen?.width);
+  const sh = toFiniteNumber(screen?.height);
+  if (sw && sh) {
+    return { width: sw, height: sh };
+  }
+  const c = canvas ?? getRendererCanvas(renderer);
+  const resolution = getRendererResolution(renderer);
+  const cw = toFiniteNumber(c?.width);
+  const ch = toFiniteNumber(c?.height);
+  return {
+    width: cw ? cw / resolution : 0,
+    height: ch ? ch / resolution : 0,
+  };
+};
+
+export type RendererPointerScale = {
+  /** Multiplier from CSS-pixel delta to PIXI stage-pixel delta on the X axis. */
+  x: number;
+  /** Multiplier from CSS-pixel delta to PIXI stage-pixel delta on the Y axis. */
+  y: number;
+  resolution: number;
+  screenWidth: number;
+  screenHeight: number;
+  cssWidth: number;
+  cssHeight: number;
+};
+
+/**
+ * Computes the conversion factor between CSS (client) pixels and PIXI stage pixels.
+ *
+ * PIXI's interaction systems (InteractionManager in v4–v7, EventSystem in v7+/v8)
+ * map a native `clientX/Y` to a global/stage coordinate using
+ * `(clientX - rect.left) * (canvas.width / rect.width) / resolution`,
+ * which equals `(clientX - rect.left) * (renderer.screen.width / rect.width)`.
+ *
+ * When you receive native `PointerEvent`s outside PIXI's interaction system (e.g.
+ * a window-level `pointermove`), you must apply this same factor to convert
+ * client-pixel deltas into stage-pixel deltas. The factor is identical for WebGL,
+ * Canvas, and WebGPU renderers — only the canvas accessor differs by PIXI version.
+ */
+export const getRendererPointerScale = (renderer: any): RendererPointerScale => {
+  const resolution = getRendererResolution(renderer);
+  const canvas = getRendererCanvas(renderer);
+  const empty: RendererPointerScale = {
+    x: 1,
+    y: 1,
+    resolution,
+    screenWidth: 0,
+    screenHeight: 0,
+    cssWidth: 0,
+    cssHeight: 0,
+  };
+
+  if (!canvas || typeof canvas.getBoundingClientRect !== 'function') {
+    return empty;
+  }
+  const rect = canvas.getBoundingClientRect();
+  const cssWidth = rect.width;
+  const cssHeight = rect.height;
+  if (!cssWidth || !cssHeight) {
+    return empty;
+  }
+  const { width: screenWidth, height: screenHeight } = getRendererScreenSize(renderer, canvas);
+  if (!screenWidth || !screenHeight) {
+    return empty;
+  }
+  return {
+    x: screenWidth / cssWidth,
+    y: screenHeight / cssHeight,
+    resolution,
+    screenWidth,
+    screenHeight,
+    cssWidth,
+    cssHeight,
+  };
+};
+
+/**
+ * Convert an absolute client (CSS-pixel) coordinate to PIXI stage coordinates,
+ * mirroring what PIXI's interaction system does internally.
+ */
+export const clientToStageCoords = (
+  clientX: number,
+  clientY: number,
+  renderer: any,
+): { x: number; y: number } => {
+  const canvas = getRendererCanvas(renderer);
+  if (!canvas) return { x: clientX, y: clientY };
+  const rect = canvas.getBoundingClientRect();
+  const scale = getRendererPointerScale(renderer);
+  return {
+    x: (clientX - rect.left) * scale.x,
+    y: (clientY - rect.top) * scale.y,
+  };
+};
+
+const rendererRegistry: WeakMap<HTMLCanvasElement, any> =
+  typeof WeakMap !== 'undefined' ? new WeakMap() : (null as any);
+
+/**
+ * Register a renderer so downstream code (e.g. window-level drag handlers) can
+ * recover it from the canvas alone. {@link resolvePixiRenderer} calls this
+ * automatically; user code that constructs a renderer directly may call it too.
+ */
+export const registerPixiRenderer = (renderer: any): void => {
+  if (!rendererRegistry) return;
+  const canvas = getRendererCanvas(renderer);
+  if (canvas) rendererRegistry.set(canvas, renderer);
+};
+
+export const findRendererForCanvas = (canvas: HTMLCanvasElement | null | undefined): any => {
+  if (!rendererRegistry || !canvas) return null;
+  return rendererRegistry.get(canvas) ?? null;
+};
+
+/**
+ * Recover the canvas from a native pointer event by walking up the composed path
+ * to the first HTMLCanvasElement (handling Shadow DOM via `composedPath`).
+ */
+export const findCanvasFromEvent = (event: Event | null | undefined): HTMLCanvasElement | null => {
+  if (!event) return null;
+  const path = typeof (event as any).composedPath === 'function' ? (event as any).composedPath() : null;
+  if (Array.isArray(path)) {
+    for (const node of path) {
+      const c = asHtmlCanvas(node);
+      if (c) return c;
+    }
+  }
+  return asHtmlCanvas((event as any).target);
+};
+
 export type ResolveRendererOptions = {
   width?: number;
   height?: number;
   forceWebgl?: boolean;
+  forceWebgpu?: boolean;
   configureView?: boolean;
   canvas?: HTMLCanvasElement | null;
   view?: any;
@@ -287,6 +474,16 @@ export const resolvePixiRenderer = async (options: ResolveRendererOptions = {}) 
   const forceWebgl = Boolean(rendererOptions.forceWebgl);
   delete rendererOptions.forceWebgl;
 
+  const forceWebgpu = Boolean(rendererOptions.forceWebgpu);
+  delete rendererOptions.forceWebgpu;
+
+  if (forceWebgl && forceWebgpu) {
+    throw new Error('forceWebgl and forceWebgpu are mutually exclusive.');
+  }
+  if (forceWebgpu && pixiVersion < 8) {
+    throw new Error('forceWebgpu requires PIXI v8 or later.');
+  }
+
   const configureViewPreference = rendererOptions.configureView;
   delete rendererOptions.configureView;
 
@@ -305,7 +502,16 @@ export const resolvePixiRenderer = async (options: ResolveRendererOptions = {}) 
 
   let candidate: any;
   try {
-    candidate = PIXI.autoDetectRenderer(rendererOptions);
+    if (forceWebgpu) {
+      const WebGPURendererCtor = (PIXI as any).WebGPURenderer;
+      if (!WebGPURendererCtor) {
+        throw new Error('forceWebgpu was requested, but this PIXI build has no WebGPURenderer.');
+      }
+      const webgpuRenderer = new WebGPURendererCtor();
+      candidate = webgpuRenderer.init(rendererOptions).then(() => webgpuRenderer);
+    } else {
+      candidate = PIXI.autoDetectRenderer(rendererOptions);
+    }
   } catch (error) {
     console.error('Failed to create PIXI renderer synchronously', error);
     throw error;
@@ -314,11 +520,15 @@ export const resolvePixiRenderer = async (options: ResolveRendererOptions = {}) 
   try {
     const resolveCandidate = async (value: any) => {
       if (!value) {
-        throw new Error('PIXI autoDetectRenderer returned an invalid renderer.');
+        throw new Error('PIXI failed to return a valid renderer.');
       }
       if (forceWebgl && !isWebglRenderer(value)) {
         value?.destroy?.(true);
         throw new Error('forceWebgl was requested, but PIXI failed to create a WebGL renderer.');
+      }
+      if (forceWebgpu && !isWebgpuRenderer(value)) {
+        value?.destroy?.(true);
+        throw new Error('forceWebgpu was requested, but PIXI failed to create a WebGPU renderer.');
       }
       if (shouldConfigureView && desiredWidth !== undefined && desiredHeight !== undefined) {
         configureRendererView(value, desiredWidth, desiredHeight, fallbackCanvas);
@@ -328,6 +538,11 @@ export const resolvePixiRenderer = async (options: ResolveRendererOptions = {}) 
         value?.destroy?.(true);
         throw new Error('forceWebgl was requested, but PIXI failed to maintain a WebGL renderer.');
       }
+      if (forceWebgpu && !isWebgpuRenderer(value)) {
+        value?.destroy?.(true);
+        throw new Error('forceWebgpu was requested, but PIXI failed to maintain a WebGPU renderer.');
+      }
+      registerPixiRenderer(value);
       return value;
     };
 
@@ -760,9 +975,9 @@ const sanitizeNumber = (value: any, fallback = 0) => {
 
 const normalizeColor = (value: any, fallback = 0xffffff) => {
   if (typeof value !== 'number' || !isFinite(value)) {
-    return fallback >>> 0;
+    return safeColorInt(fallback);
   }
-  return (value >>> 0) & 0xffffff;
+  return safeColorInt(value);
 };
 
 const ensureGraphicsCompatState = (target: any): GraphicsCompatState => {
@@ -946,6 +1161,37 @@ export const getPixiVersion = () => {
   return parseFloat(PIXI.VERSION);
 }
 
+/**
+ * Draw a filled rectangle on a Graphics object using the appropriate API for the PIXI version.
+ * This bypasses the compat shim and uses native APIs directly for maximum reliability.
+ */
+export const drawFilledRect = (
+  graphics: PIXI.Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: number = 0xffffff,
+  alpha: number = 1
+): PIXI.Graphics => {
+  const version = getPixiVersion();
+  const g = graphics as any;
+  
+  if (version >= 8) {
+    // PIXI v8 uses new fluent API: graphics.rect().fill()
+    if (typeof g.rect === 'function') {
+      g.rect(x, y, width, height).fill({ color, alpha });
+    }
+  } else {
+    // PIXI v4-v7 use legacy API
+    g.beginFill(color, alpha);
+    g.drawRect(x, y, width, height);
+    g.endFill();
+  }
+  
+  return graphics;
+};
+
 export interface BitmapTextLike extends PIXI.Container {
   text: string;
   maxWidth?: number;
@@ -976,8 +1222,7 @@ const resolveTintColor = (value: any): number | null => {
 };
 
 const tintToHexString = (value: number) => {
-  const normalized = (value >>> 0) & 0xffffff;
-  const hex = normalized.toString(16);
+  const hex = safeColorInt(value).toString(16);
   return `#${('000000' + hex).slice(-6)}`;
 };
 
@@ -1411,29 +1656,160 @@ export const createBitmapText = (text: string, style?: any): BitmapTextLike => {
   return instance;
 };
 
+/**
+ * Represents a virtual glyph with position and size information.
+ * Used for v7+ where BitmapText doesn't have child sprites for glyphs.
+ */
+interface VirtualGlyph {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  char: string;
+  tint?: number;
+}
+
+/**
+ * Computes virtual glyph data from BitmapFont metrics for v7+ compatibility.
+ * In v7+, BitmapText uses GPU rendering and doesn't create child sprites.
+ */
+const computeVirtualGlyphs = (bitmapText: BitmapTextLike): VirtualGlyph[] => {
+  const anyBitmap = bitmapText as any;
+  const text = anyBitmap.text ?? '';
+  
+  if (!text || typeof text !== 'string') {
+    return [];
+  }
+  
+  // Get the font family from the style - try multiple locations for v8 compatibility
+  const style = anyBitmap.style ?? anyBitmap._style ?? {};
+  
+  // In v8, TextStyle stores fontFamily in _fontFamily (accessed via getter)
+  // Also check the original style options passed during construction
+  const fontFamily = normalizeFontFamilyName(
+    style.fontFamily ?? 
+    style._fontFamily ?? 
+    style.fontName ?? 
+    style.font ??
+    anyBitmap._fontFamily ??
+    anyBitmap.fontName ??
+    anyBitmap.font
+  );
+  
+  if (!fontFamily) {
+    return [];
+  }
+  
+  // Get the font entry from cache
+  const fontEntry = getBitmapFontCacheEntry(fontFamily);
+  
+  if (!fontEntry || !fontEntry.chars) {
+    return [];
+  }
+  
+  // Calculate scale factor
+  const baseFontSize = fontEntry.baseMeasurementFontSize ?? fontEntry.baseRenderedFontSize ?? fontEntry.fontSize ?? fontEntry.size ?? 16;
+  const targetFontSize = style.fontSize ?? baseFontSize;
+  const scale = targetFontSize / baseFontSize;
+  
+  const glyphs: VirtualGlyph[] = [];
+  let currentX = 0;
+  let previousChar: string | null = null;
+  
+  // Helper to get char data - handles both Map (v7) and Object (v8)
+  const getCharData = (chars: any, char: string): any => {
+    if (chars instanceof Map) {
+      // v7 uses char codes as keys
+      return chars.get(char.charCodeAt(0)) ?? chars.get(char);
+    }
+    // v8 uses strings as keys
+    return chars[char] ?? chars[char.charCodeAt(0)];
+  };
+  
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    const charData = getCharData(fontEntry.chars, char);
+    
+    if (!charData) {
+      // Use a default width for unknown characters
+      const fallbackWidth = 8 * scale;
+      glyphs.push({
+        x: currentX,
+        y: 0,
+        width: fallbackWidth,
+        height: baseFontSize * scale,
+        char,
+      });
+      currentX += fallbackWidth;
+      previousChar = char;
+      continue;
+    }
+    
+    // Apply kerning if available
+    const kerning = (charData.kerning && previousChar && charData.kerning[previousChar]) || 0;
+    currentX += kerning * scale;
+    
+    // Get character dimensions
+    const charWidth = (charData.texture?.frame?.width ?? charData.width ?? charData.xAdvance ?? 8) * scale;
+    const charHeight = (charData.texture?.frame?.height ?? charData.height ?? baseFontSize) * scale;
+    const xOffset = (charData.xOffset ?? 0) * scale;
+    const yOffset = (charData.yOffset ?? 0) * scale;
+    const xAdvance = (charData.xAdvance ?? charWidth) * scale;
+    
+    glyphs.push({
+      x: currentX + xOffset,
+      y: yOffset,
+      width: charWidth,
+      height: charHeight,
+      char,
+    });
+    
+    currentX += xAdvance;
+    previousChar = char;
+  }
+  
+  return glyphs;
+};
+
 export const getBitmapTextGlyphs = (bitmapText: BitmapTextLike): PIXI.DisplayObject[] => {
   if (!bitmapText) {
     return [];
   }
   const anyBitmap = bitmapText as any;
-  const candidates = anyBitmap.glyphs ?? anyBitmap._glyphs ?? anyBitmap.children ?? [];
-  if (Array.isArray(candidates)) {
-    return candidates.filter(Boolean);
-  }
-  if (typeof candidates.values === 'function') {
-    const values = Array.from(candidates.values()) as PIXI.DisplayObject[];
-    return values.filter(Boolean);
-  }
-  if (typeof candidates.forEach === 'function') {
-    const result: PIXI.DisplayObject[] = [];
-    candidates.forEach((value: any) => {
-      if (value) {
-        result.push(value as PIXI.DisplayObject);
+  const pixiVersion = getPixiVersion();
+  
+  // For v4-v6, try to get actual child sprites
+  if (pixiVersion < 7) {
+    const candidates = anyBitmap.glyphs ?? anyBitmap._glyphs ?? anyBitmap.children ?? [];
+    if (Array.isArray(candidates) && candidates.length > 0) {
+      return candidates.filter(Boolean);
+    }
+    if (typeof candidates.values === 'function') {
+      const values = Array.from(candidates.values()) as PIXI.DisplayObject[];
+      if (values.length > 0) {
+        return values.filter(Boolean);
       }
-    });
-    return result;
+    }
+    if (typeof candidates.forEach === 'function') {
+      const result: PIXI.DisplayObject[] = [];
+      candidates.forEach((value: any) => {
+        if (value) {
+          result.push(value as PIXI.DisplayObject);
+        }
+      });
+      if (result.length > 0) {
+        return result;
+      }
+    }
   }
-  return [];
+  
+  // For v7+, or if no children found, compute virtual glyphs from font metrics
+  // This is necessary because v7+ BitmapText uses GPU rendering without child sprites
+  const virtualGlyphs = computeVirtualGlyphs(bitmapText);
+  
+  // Return virtual glyphs cast as DisplayObjects for API compatibility
+  // The calling code only needs x, width, and optionally tint properties
+  return virtualGlyphs as unknown as PIXI.DisplayObject[];
 };
 
 export const setBitmapTextTint = (
@@ -1570,12 +1946,12 @@ export function createTexture(texture: PIXI.Texture | PIXI.BaseTexture, rect: { 
     return new PIXI.Texture({
       source: 'source' in texture ? texture.source : 'baseTexture' in texture ? texture.baseTexture : texture,
       frame: rect,
-    } as any);
+    });
   } else {
     return new PIXI.Texture(
       'baseTexture' in texture ? texture.baseTexture : texture,
        new PIXI.Rectangle(rect.x, rect.y, rect.width, rect.height)
-    );  
+    );
   }
 }
 
@@ -1583,7 +1959,7 @@ export async function ensureTextureLoaded(texture: PIXI.Texture) : Promise<PIXI.
   if(getPixiVersion() >= 8) {
     return texture;
   }
-  if(getPixiVersion() >= 5 && !(texture.baseTexture as any).valid) {
+  if(getPixiVersion() >= 5 && !texture.baseTexture.valid) {
     return new Promise((resolve) => {
       texture.baseTexture.once('loaded',async () => {
         return resolve(texture);
@@ -1747,10 +2123,11 @@ export function clearRenderTexture(
   renderRenderTexture(rendererAny, renderTexture, graphics, false);
   graphics.destroy(true);
 }
-export function createRenderTexture(width: number, height: number, scaleMode?: string | number, resolution?: number) {
+
+export function createRenderTexture(width: number, height: number, scaleMode?: number, resolution?: number) {
   assertGlobalPixi('createRenderTexture');
   if(getPixiVersion() >= 7) {
-    const opts : any = { width, height }
+    const opts: PIXI.RenderTextureCreateOptions = { width, height };
     if(scaleMode !== undefined) {
       opts.scaleMode = scaleMode;
     }
@@ -1759,7 +2136,7 @@ export function createRenderTexture(width: number, height: number, scaleMode?: s
     }
     return PIXI.RenderTexture.create(opts)
   } else {
-    return PIXI.RenderTexture.create(width, height, scaleMode as number, resolution)
+    return PIXI.RenderTexture.create(width, height, scaleMode, resolution)
   }
 }
 
@@ -1819,7 +2196,7 @@ export const imageBitmapToTexture = (
   // PIXI v5 → WebGL: manual GL upload, Canvas fallback if not WebGL
   if (pixiVersion >= 4) {
       // v4 fallback — create a BaseTexture and mark it loaded so Pixi will treat it as valid.
-      const baseTexture = new PIXI.BaseTexture(null);
+      const baseTexture = new PIXI.BaseTexture(null as any);
 
       // attach the ImageBitmap as the "source"
       (baseTexture as any).source = imageBitmap;    // v4 uses .source
@@ -1871,7 +2248,7 @@ export async function getTextureFromBlob(blob: Blob) : Promise<PIXI.Texture> {
   let blobURL: string;
   let needRevoke = true;
   try {
-      blobURL = URL.createObjectURL(blob);
+      blobURL = URL?.createObjectURL(blob) ?? '';
   } catch(err) {
       needRevoke = false;
       const base64 = bufferToBase64(blob as unknown as ArrayBuffer);
@@ -1883,7 +2260,7 @@ export async function getTextureFromBlob(blob: Blob) : Promise<PIXI.Texture> {
       img.src = blobURL;
       img.addEventListener("load", (event) => {
           if(needRevoke) {
-              {URL.revokeObjectURL(blobURL);}
+              URL?.revokeObjectURL(blobURL);
           }
           return resolve(getTextureFromImage(img));
       });// onload revoke the blob URL (because the browser has loaded and parsed the image data)

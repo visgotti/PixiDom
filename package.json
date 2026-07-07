@@ -1,21 +1,61 @@
 {
   "name": "pixidom.js",
-  "version": "0.0.9",
-  "description": "Simple to use lib that immitates dom elements in pixi.js",
+  "version": "1.0.0",
+  "description": "A lightweight UI component library for PixiJS - text inputs, buttons, toggles, sliders, and scrollable lists",
+  "keywords": [
+    "pixi",
+    "pixijs",
+    "ui",
+    "components",
+    "textfield",
+    "button",
+    "toggle",
+    "slider",
+    "scrolllist",
+    "canvas",
+    "webgl",
+    "game",
+    "interactive"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:legacy": "webpack --config webpack.config.js --mode production",
+    "build:demo": "npm run build && node scripts/build-gh-pages.js && node scripts/capture-demo-previews.js",
+    "dev:demo": "npm run build && npx serve",
+    "watch:lib": "vite build --watch",
     "preview": "vite preview",
     "test": "mocha --recursive --require ts-node/register 'test/**/*.test.ts' --exit",
+    "test:e2e": "npm run build && playwright test",
+    "test:e2e:update": "npm run build && playwright test --update-snapshots",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:smoke": "node scripts/smoke-import.mjs",
     "serve:examples": "node scripts/serve-examples.js",
     "e2e": "npm run test:e2e",
     "e2e:report": "sh -c 'npm run test:e2e; STATUS=$?; npx playwright show-report; exit $STATUS'",
-    "test:e2e": "playwright test",
-    "test:e2e:update": "playwright test --update-snapshots"
+    "snapshot-report": "sh -c 'npm run test:e2e; node scripts/generate-snapshot-report.js'",
+    "snapshot-report:readme": "node scripts/generate-snapshot-report.js && node scripts/inject-snapshot-readme.js",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.cjs",
+    "dist/**/*.mjs",
+    "dist/**/*.d.ts",
+    "!dist/pixi-bootstrap.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "peerDependencies": {
+    "pixi.js": ">=4.0.0"
   },
   "main": "dist/index.cjs",
-  "module": "dist/index.es.js",
+  "module": "dist/index.es.mjs",
   "types": "dist/index.d.ts",
   "unpkg": "dist/pixidom.js",
   "jsdelivr": "dist/pixidom.js",
@@ -23,13 +63,13 @@
     ".": {
       "types": "./dist/index.d.ts",
       "browser": "./dist/pixidom.js",
-      "import": "./dist/index.es.js",
+      "import": "./dist/index.es.mjs",
       "require": "./dist/index.cjs"
     },
     "./index": {
       "types": "./dist/index.d.ts",
       "browser": "./dist/pixidom.js",
-      "import": "./dist/index.es.js",
+      "import": "./dist/index.es.mjs",
       "require": "./dist/index.cjs"
     },
     "./package.json": "./package.json"
@@ -40,20 +80,15 @@
     "@playwright/test": "^1.48.2",
     "@types/chai": "^4.1.7",
     "@types/mocha": "^5.2.6",
-    "@types/pixi.js": "^4.8.7",
+    "@types/tween-functions": "^1.2.2",
     "chai": "^4.2.0",
-    "elliptic": "^6.5.3",
     "mocha": "^6.1.4",
-    "pixelmatch": "^7.1.0",
     "pixi.js": "^8.1.5",
-    "pngjs": "^7.0.0",
-    "ts-loader": "^6.0.1",
-    "ts-node": "^8.1.0",
-    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "typedoc": "^0.28.19",
+    "typescript": "^6.0.3",
     "vite": "^6.0.11",
-    "vite-plugin-dts": "^4.5.0",
-    "webpack": "^5.95.0",
-    "webpack-cli": "^5.1.4"
+    "vite-plugin-dts": "^4.5.0"
   },
   "repository": {
     "type": "git",
@@ -64,7 +99,6 @@
   },
   "homepage": "https://github.com/visgotti/PixiDom#readme",
   "dependencies": {
-    "gotti-color-tween": "^0.1.2",
     "tween-functions": "^1.2.0"
   }
 }

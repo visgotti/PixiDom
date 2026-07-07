@@ -1,36 +1,65 @@
 import { PixiElement } from '../../Element';
-import {clamp, parseLengthMeasurements} from "../../utils";
+import {clamp} from "../../utils";
+import { normalizeColor, type Color, type NormalizedColor } from "../../color";
 import {ScrollList} from "./ScrollList";
+
+/**
+ * Options for side scroll buttons.
+ */
 export type SideScrollOptions = {
+    /** Width of the scroll button */
     width: number,
+    /** Height of the scroll button */
     height: number,
-    color: number
+    /** Color of the scroll button. Accepts any {@link Color} format. */
+    color: Color
 }
 
+/**
+ * Styling options for the scroller thumb element.
+ */
 export type ScrollerStyleOptions = {
-    color: number,
-    hoverColor: number,
-    mouseDownColor: number,
+    /** Default color of the scroller. Accepts any {@link Color} format. */
+    color: Color,
+    /** Color when hovering over the scroller. Accepts any {@link Color} format. */
+    hoverColor: Color,
+    /** Color when the scroller is pressed. Accepts any {@link Color} format. */
+    mouseDownColor: Color,
 }
 
+/**
+ * Configuration options for the ScrollBar component.
+ */
 export type ScrollBarStyleOptions = {
+    /** Width of the scrollbar */
     width: number,
+    /** Height of the scrollbar (optional, auto-calculated) */
     height: number,
-    backgroundColor: number,
+    /** Background color of the scrollbar track. Accepts any {@link Color} format. */
+    backgroundColor: Color,
+    /** Styling options for the scroller thumb */
     scrollerOptions: ScrollerStyleOptions
 }
 
+/**
+ * Scrollbar component for the ScrollList.
+ * Provides visual feedback and interactive scrolling via drag or click.
+ * 
+ * @extends PixiElement
+ */
 export class ScrollBar extends PixiElement {
     public scrolling : boolean = false;
     private scroller: Scroller;
     private bg: PIXI.Graphics;
     private options: ScrollBarStyleOptions;
+    private resolvedBackgroundColor: NormalizedColor;
     private scrollList : ScrollList;
     constructor(scrollList: ScrollList, options: ScrollBarStyleOptions) {
         super();
         this.scrollList = scrollList;
         // @ts-ignore
         this.options = options || {};
+        this.resolvedBackgroundColor = normalizeColor(this.options.backgroundColor ?? 0xf7f7f7);
         this.bg = new PIXI.Graphics();
         this.addChild(this.bg);
         this.scroller = new Scroller(this, options.scrollerOptions);
@@ -50,7 +79,7 @@ export class ScrollBar extends PixiElement {
     }
     public redraw() {
         this.bg.clear();
-        this.bg.beginFill(this.options.backgroundColor || 0xf7f7f7);
+        this.bg.beginFill(this.resolvedBackgroundColor.value, this.resolvedBackgroundColor.alpha);
         this.bg.drawRect(0, 0, this.options.width, this.visibleLength);
         this.scroller.redraw();
     }
@@ -63,8 +92,7 @@ export class ScrollBar extends PixiElement {
     }
 
     private registerScrollerEvents() {
-        let lastScrollY:any;
-        this.onHeldDown((e) => {
+        this.onHeldDown((e: PIXI.FederatedPointerEvent) => {
             const mouseY = e.data.global.y -this.getGlobalPosition().y;
             let toY = -1;
             if(mouseY < this.scroller.y) {
@@ -79,30 +107,29 @@ export class ScrollBar extends PixiElement {
             }
         }, 50);
 
-        let prevMouseY;
-        let start;
-        this.scroller.onDragStart(event => {
+        // PixiElement attaches window-level pointermove on dragstart, so dragmove
+        // continues firing when the cursor leaves the scroller. We just consume it.
+        let startGlobalY = 0;
+        let startScrollerY = 0;
+
+        this.scroller.onDragStart((event: PIXI.FederatedPointerEvent) => {
             this.scrolling = true;
+            startGlobalY = (event as any).global?.y ?? event.data?.global?.y ?? 0;
+            startScrollerY = this.scroller.y;
         }, 0);
-        this.scroller.onDragEnd(event => {
+        this.scroller.onDragMove((event: PIXI.FederatedPointerEvent) => {
+            event.stopPropagation();
+            const gy = (event as any).global?.y ?? event.data?.global?.y ?? 0;
+            const next = clamp(startScrollerY + (gy - startGlobalY), 0, this.visibleLength - this.scroller.height);
+            if (next === this.scroller.y) return;
+            this.scroller.y = next;
+            this.emitScroll();
+        });
+        this.scroller.onDragEnd(() => {
             this.scrolling = false;
         });
-        this.scroller.onDragMove(event => {
-            event.stopPropagation();
-            const movementY = event.data.originalEvent.movementY;
-            const mouseY = event.data.global.y;
-            const globalP = this.getGlobalPosition();
-            const globalScrollY = this.scroller.y + globalP.y;
-            let extra = 0;
-            if(mouseY > globalScrollY + this.scroller.height) {
-                extra = mouseY - (globalScrollY + this.scroller.height);
-            } else if (mouseY < globalScrollY) {
-                extra = mouseY - globalScrollY;
-            }
-            this.scroller.y = clamp(this.scroller.y + movementY + extra, 0, this.visibleLength-this.scroller.height);
-            this.emitScroll();
-        })
     }
+
     private emitScroll() {
         const utilizedSpaceForPercent = this.visibleLength - this.scroller.height;
         const percent = this.scroller.y / utilizedSpaceForPercent
@@ -113,13 +140,16 @@ export class ScrollBar extends PixiElement {
 
 class Scroller extends PixiElement {
     private rect: PIXI.Graphics;
-    private curPercent: number;
     private scrollBar : ScrollBar;
     private styleObj : Partial<ScrollerStyleOptions>;
+    private resolvedColor: NormalizedColor;
     constructor(scrollBar: ScrollBar, options?: ScrollerStyleOptions) {
         super();
         this.scrollBar = scrollBar;
         this.styleObj = options || {};
+        this.resolvedColor = 'color' in this.styleObj && this.styleObj.color !== undefined
+            ? normalizeColor(this.styleObj.color)
+            : normalizeColor(0x000000);
         this.rect = new PIXI.Graphics();
         this.addChild(this.rect);
     }
@@ -130,7 +160,7 @@ class Scroller extends PixiElement {
         this.rect.clear();
         if(this.scrollBar.visibleLength >= this.scrollBar.maxLength) return;
         const length = Math.ceil(this.scrollBar.visibleLength / (this.scrollBar.maxLength / this.scrollBar.visibleLength));
-        this.rect.beginFill('color' in this.styleObj ? this.styleObj.color : 0x000000);
+        this.rect.beginFill(this.resolvedColor.value, this.resolvedColor.alpha);
         this.rect.drawRect(0, 0, this.scrollBar.width, length);
         this.rect.endFill();
     }

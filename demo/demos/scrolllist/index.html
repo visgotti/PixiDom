@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScrollList Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>ScrollList Component</h1>
+            <p>Virtualized scrollable list with optional scrollbar and touch support.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Virtualized rendering for performance</li>
+                        <li>Optional scrollbar with custom styling</li>
+                        <li>Touch and mouse wheel scrolling</li>
+                        <li>Item click handlers</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>ScrollList Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// prop(label, options) returns a (possibly overridden) options object that
+// you pass into the component. Edits made in the Prop Table re-run the code
+// with the new values, so changes flow into the live preview.
+const { ScrollList } = PIXI_DOM;
+
+stage.removeChildren();
+
+const listOpts = prop('ScrollList', {
+  x: 50, y: 20,
+  itemCount: 50,
+  width: '300px',
+  height: '350px',
+  scrollBarOptions: {
+    width: 8,
+    backgroundColor: 0x2a2a2a,
+    scrollerOptions: { color: 0x4a90d9 },
+  },
+});
+
+const items = Array.from({ length: listOpts.itemCount }, (_, i) => {
+  const container = new PIXI.Container();
+  const bg = new PIXI.Graphics();
+  bg.beginFill(i % 2 === 0 ? 0x2a2a2a : 0x1f1f1f);
+  bg.drawRect(0, 0, 280, 40);
+  bg.endFill();
+  container.addChild(bg);
+  const text = new PIXI.Text(\`Item \${i + 1}\`, { fill: 0xffffff, fontSize: 16 });
+  text.position.set(10, 12);
+  container.addChild(text);
+  return {
+    container,
+    onClick: () => console.log(\`Clicked item \${i + 1}\`),
+  };
+});
+
+const scrollList = new ScrollList(listOpts, items);
+scrollList.position.set(listOpts.x, listOpts.y);
+stage.addChild(scrollList);`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

@@ -25,6 +25,8 @@ const disposeInterval = () => {
     }
 };
 
+const useWebgpu = new URLSearchParams(location.search).get('renderer') === 'webgpu';
+
 const run = async () => {
     const rendererOptions = {
         width: RENDER_WIDTH,
@@ -33,7 +35,7 @@ const run = async () => {
         roundPixels: true,
         resolution: 1,
         canvas,
-        forceWebgl: true,
+        ...(useWebgpu ? { forceWebgpu: true } : { forceWebgl: true }),
     };
 
     try {

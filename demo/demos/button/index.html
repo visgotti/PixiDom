@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>Button Component</h1>
+            <p>Interactive buttons with customizable states for default, hover, and pressed appearances.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Customizable default, hover, and pressed states</li>
+                        <li>Support for bitmap fonts and regular text</li>
+                        <li>Background colors or textures</li>
+                        <li>Configurable border radius and opacity</li>
+                        <li>Click event handlers</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>Button Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// prop(label, options) returns a (possibly overridden) options object that
+// you pass into the component. Edits made in the Prop Table re-run the code
+// with the new values, so changes flow into the live preview.
+const { Button } = PIXI_DOM;
+
+stage.removeChildren();
+
+const button1Opts = prop('Button 1: Default', {
+  text: 'Click Me!', x: 50, y: 50,
+  font: 'Arial',
+  useBitmapText: false,
+  fontSize: 16,
+  defaultStyle: { width: 150, height: 50, backgroundColor: 0x4a90d9, textColor: 0xffffff, borderRadius: 10 },
+  hoverStyle:   { width: 150, height: 50, backgroundColor: 0x357abd, textColor: 0xffffff },
+  pressedStyle: { width: 150, height: 50, backgroundColor: 0x2a5f8f, textColor: 0xffffff },
+});
+const button1 = new Button(button1Opts.text, button1Opts);
+button1.position.set(button1Opts.x, button1Opts.y);
+button1.onClick(() => console.log('Button 1 clicked!'));
+stage.addChild(button1);
+
+const button2Opts = prop('Button 2: Rounded', {
+  text: 'Rounded', x: 250, y: 50,
+  font: 'Arial',
+  useBitmapText: false,
+  fontSize: 16,
+  defaultStyle: { width: 120, height: 50, backgroundColor: 0x4cd964, textColor: 0xffffff, borderRadius: 50 },
+  hoverStyle:   { width: 120, height: 50, backgroundColor: 0x3cb854, textColor: 0xffffff },
+});
+const button2 = new Button(button2Opts.text, button2Opts);
+button2.position.set(button2Opts.x, button2Opts.y);
+stage.addChild(button2);
+
+const button3Opts = prop('Button 3: Large', {
+  text: 'Large Button', x: 150, y: 180,
+  font: 'Arial',
+  useBitmapText: false,
+  fontSize: 18,
+  defaultStyle: { width: 200, height: 60, backgroundColor: 0xff9500, textColor: 0xffffff, borderRadius: 12 },
+  hoverStyle:   { width: 200, height: 60, backgroundColor: 0xd97e00, textColor: 0xffffff },
+});
+const button3 = new Button(button3Opts.text, button3Opts);
+button3.position.set(button3Opts.x, button3Opts.y);
+stage.addChild(button3);`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

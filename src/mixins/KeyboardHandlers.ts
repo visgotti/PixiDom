@@ -42,7 +42,7 @@ export default function <TBase extends Constructor>(Base: TBase){
             this.on('blur', this.unregisterHandlers);
         }
 
-        public changeStateIndex(change) {
+        public changeStateIndex(change: number) {
             const newIndex = this.currentStateIndex = change;
             if(this.textStates[newIndex]) {
                 super.change(this.textStates[newIndex]);
@@ -65,7 +65,7 @@ export default function <TBase extends Constructor>(Base: TBase){
             document.removeEventListener("keydown", this.onKeyDown, true);
         }
 
-        public onPaste(event) {
+        public onPaste(event: ClipboardEvent) {
             const pastedText = event.clipboardData ? event.clipboardData.getData('text/plain') : this.copiedText;
             const newText = super.replaceSelectedWith(pastedText);
             if(newText !== null) {
@@ -73,7 +73,7 @@ export default function <TBase extends Constructor>(Base: TBase){
             }
         }
 
-        public onCopy(event) {
+        public onCopy(event: ClipboardEvent) {
             event.preventDefault();
             const selected = super.getSelectedChars();
             if(event.clipboardData) {
@@ -82,7 +82,7 @@ export default function <TBase extends Constructor>(Base: TBase){
             this.copiedText = selected;
         }
 
-        public onCut(event){
+        public onCut(event: ClipboardEvent){
             event.preventDefault();
             const selected = super.getSelectedChars();
             if(event.clipboardData) {
@@ -215,7 +215,7 @@ export default function <TBase extends Constructor>(Base: TBase){
             }
         }
 
-        public addState(newText) {
+        public addState(newText: string) {
             this.textStates.push(newText);
             this.currentStateIndex = this.textStates.length - 1;
         }

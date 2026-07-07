@@ -2,16 +2,15 @@ Number.isNaN = Number.isNaN || function(value) {
     return typeof value === "number" && isNaN(value);
 }
 
-type ParsedMeasurement = {
-    valid: boolean,
-    error?: string,
-    value?: number,
-    type?: string, // percent or pixel
-}
+import type { MeasurementType, ValidMeasurement } from './types';
 
-export const parseLengthMeasurements = function(measurement) : ParsedMeasurement {
+type ParsedMeasurement =
+    | (ValidMeasurement & { valid: true })
+    | { valid: false; error: string };
+
+export const parseLengthMeasurements = function(measurement: unknown) : ParsedMeasurement {
     const invalid = (error: string): ParsedMeasurement => ({ valid: false, error });
-    const asNumber = (value: any) => {
+    const asNumber = (value: unknown): number | undefined => {
         if (typeof value === 'number' && !Number.isNaN(value)) {
             return value;
         }
@@ -34,11 +33,12 @@ export const parseLengthMeasurements = function(measurement) : ParsedMeasurement
         }
 
         if (typeof measurement === 'object' && 'value' in measurement && 'type' in measurement) {
-            const numeric = asNumber((measurement as ParsedMeasurement).value);
+            const obj = measurement as { value: unknown; type: unknown };
+            const numeric = asNumber(obj.value);
             if (numeric === undefined) {
                 throw new Error('Did not find a number in front of px');
             }
-            const type = (measurement as ParsedMeasurement).type === 'percent' ? 'percent' : 'pixel';
+            const type: MeasurementType = obj.type === 'percent' ? 'percent' : 'pixel';
             if (type === 'pixel' && numeric < 0) {
                 throw new Error('Can not have negative pixel length value');
             }
@@ -60,7 +60,7 @@ export const parseLengthMeasurements = function(measurement) : ParsedMeasurement
             };
         }
 
-        const raw = measurement.toString().trim();
+        const raw = String(measurement).trim();
         if (!raw.length) {
             throw new Error('Length values must either be in % or px');
         }
@@ -106,32 +106,40 @@ export const parseLengthMeasurements = function(measurement) : ParsedMeasurement
 
         throw new Error('Length values must either be in % or px');
     } catch(err) {
-        return invalid(err.message);
+        const message = err instanceof Error ? err.message : String(err);
+        return invalid(message);
     }
 }
 
-export function clamp(num, min, max) {
+export function clamp(num: number, min: number, max: number): number {
     return num <= min ? min : num >= max ? max : num;
 }
 
-export function string2hex(string) {
-    if (typeof string === 'string' && string[0] === '#')
-    {
-        string = string.substr(1);
+export function string2hex(input: string | number): number {
+    let s = typeof input === 'number' ? input.toString(16) : input;
+    if (typeof s === 'string' && s[0] === '#') {
+        s = s.substring(1);
     }
-    return parseInt(string, 16);
+    return parseInt(s, 16);
 }
 
 
-type PixiRectLike = { x: number, y: number, width: number, height: number, parent?: { width: number, height: number } }
+type PixiRectLike = { x: number, y: number, width: number, height: number, parent?: { width: number, height: number } | null }
+type CenterParent = { width?: number, height?: number };
 
 
-export function centerPixiObject(object: PixiRectLike, opts: { axis: 'y', parent?: { height: number } })
-export function centerPixiObject(object: PixiRectLike, opts: { axis?: 'x' | 'y', parent?: { width?: number, height?: number } }) {
-    if(!object.parent && !opts?.parent) throw new Error(`No parent`);
-    const parentRect : { width?: number, height?: number } = opts?.parent || object.parent;
-    const centerX = () => object.x = parentRect.width / 2 - object.width / 2
-    const centerY = () => object.y = parentRect.height / 2 - object.height / 2
+export function centerPixiObject(object: PixiRectLike, opts: { axis: 'y', parent?: { height: number } }): void;
+export function centerPixiObject(object: PixiRectLike, opts: { axis?: 'x' | 'y', parent?: CenterParent }): void {
+    const parentRect: CenterParent | null = opts?.parent ?? object.parent ?? null;
+    if (!parentRect) throw new Error(`No parent`);
+    const centerX = () => {
+        if (parentRect.width === undefined) throw new Error('Parent has no width');
+        object.x = parentRect.width / 2 - object.width / 2;
+    };
+    const centerY = () => {
+        if (parentRect.height === undefined) throw new Error('Parent has no height');
+        object.y = parentRect.height / 2 - object.height / 2;
+    };
     if(opts?.axis) {
       if(opts.axis === 'x') {
         centerX();

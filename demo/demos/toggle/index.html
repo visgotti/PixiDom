@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toggle Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>Toggle Component</h1>
+            <p>Animated toggle switches with labels and customizable appearance.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Smooth animations with customizable easing</li>
+                        <li>Support for labels and bitmap fonts</li>
+                        <li>Configurable colors and dimensions</li>
+                        <li>Event callbacks for state changes</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>Toggle Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// prop(label, options) returns a (possibly overridden) options object that
+// you pass into the component. Edits made in the Prop Table re-run the code
+// with the new values, so changes flow into the live preview.
+const { Toggle } = PIXI_DOM;
+
+stage.removeChildren();
+
+const toggle1Opts = prop('Toggle 1: Default (no animation)', {
+  x: 50, y: 50,
+  width: 60,
+  height: 30,
+  borderRadius: 50,
+  onBackgroundColor: 0x4a90d9,
+  offBackgroundColor: 0x666666,
+  onCircleColor: 0xffffff,
+  offCircleColor: 0xffffff,
+});
+const toggle1 = new Toggle(toggle1Opts);
+toggle1.position.set(toggle1Opts.x, toggle1Opts.y);
+toggle1.onToggle((isOn) => console.log('Toggle 1:', isOn ? 'ON' : 'OFF'));
+stage.addChild(toggle1);
+
+const toggle2Opts = prop('Toggle 2: Linear easing', {
+  x: 50, y: 120,
+  width: 70,
+  height: 35,
+  borderRadius: 50,
+  onBackgroundColor: 0x4cd964,
+  offBackgroundColor: 0x999999,
+  onCircleColor: 0xffffff,
+  offCircleColor: 0xffffff,
+  animationOptions: { type: 'linear', duration: 200 },
+});
+const toggle2 = new Toggle(toggle2Opts);
+toggle2.position.set(toggle2Opts.x, toggle2Opts.y);
+stage.addChild(toggle2);
+
+const toggle3Opts = prop('Toggle 3: Elastic, starts ON', {
+  x: 50, y: 200,
+  toggled: true,
+  width: 50,
+  height: 25,
+  borderRadius: 50,
+  onBackgroundColor: 0xff9500,
+  offBackgroundColor: 0x555555,
+  onCircleColor: 0xffffff,
+  offCircleColor: 0xffffff,
+  animationOptions: { type: 'elastic', duration: 400 },
+});
+const toggle3 = new Toggle(toggle3Opts);
+toggle3.position.set(toggle3Opts.x, toggle3Opts.y);
+toggle3.toggled = !!toggle3Opts.toggled;
+stage.addChild(toggle3);`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

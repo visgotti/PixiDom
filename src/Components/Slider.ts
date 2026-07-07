@@ -1,59 +1,190 @@
+import { PixiElement } from "../Element";
 import { centerPixiObject } from "../utils";
+import { normalizeColor, type Color } from "../color";
 
+/**
+ * Configuration options for creating a Slider component.
+ */
 type SliderOptions = {
-  startingValue: number;
-  minValue: number;
-  maxValue: number;
+  /** Starting value of the slider */
+  startingValue?: number;
+  /** Minimum value of the slider */
+  minValue?: number;
+  /** Maximum value of the slider */
+  maxValue?: number;
+  /** Width of the track in pixels */
   width: number;
+  /** Height of the track in pixels */
   height: number;
-  circleRadius: number;
+  /** Radius of the handle circle (alias: handleRadius) */
+  circleRadius?: number;
+  /** Alias for circleRadius */
+  handleRadius?: number;
   preventScaleAdjustment?: boolean;
   circleOpacity?: number;
   down?: {
       circleOpacity?: number;
       circleRadius?: number;
-      circleColor?: number;
+      handleRadius?: number;
+      /** Accepts any {@link Color} format. */
+      circleColor?: Color;
+      /** Accepts any {@link Color} format. */
+      handleColor?: Color;
       circleOutlineWidth?: number;
-      circleOutlineColor?: number;
+      /** Accepts any {@link Color} format. */
+      circleOutlineColor?: Color;
       circleOutlineOpacity?: number;
   };
   hover?: {
       circleOpacity?: number;
       circleRadius?: number;
-      circleColor?: number;
+      handleRadius?: number;
+      /** Accepts any {@link Color} format. */
+      circleColor?: Color;
+      /** Accepts any {@link Color} format. */
+      handleColor?: Color;
       circleOutlineWidth?: number;
-      circleOutlineColor?: number;
+      /** Accepts any {@link Color} format. */
+      circleOutlineColor?: Color;
       circleOutlineOpacity?: number;
   };
-  activeColor: number;
-  inactiveColor: number;
+  /** Color of the active (filled) portion of the track. Accepts any {@link Color} format. */
+  activeColor?: Color;
+  /** Color of the inactive portion of the track (alias: trackColor). Accepts any {@link Color} format. */
+  inactiveColor?: Color;
+  /** Alias for inactiveColor. Accepts any {@link Color} format. */
+  trackColor?: Color;
   opacity?: number;
-  circleColor?: number;
+  /** Color of the handle circle (alias: handleColor). Accepts any {@link Color} format. */
+  circleColor?: Color;
+  /** Alias for circleColor. Accepts any {@link Color} format. */
+  handleColor?: Color;
   circleOutlineWidth?: number;
-  circleOutlineColor?: number;
+  /** Outline color of the handle circle. Accepts any {@link Color} format. */
+  circleOutlineColor?: Color;
   circleOutlineOpacity?: number;
+  /** Alias for startingValue */
+  value?: number;
+  /** Alias for minValue */
+  min?: number;
+  /** Alias for maxValue */
+  max?: number;
 }
 
+type ResolvedSliderOptions = SliderOptions & {
+  startingValue: number;
+  minValue: number;
+  maxValue: number;
+  circleRadius: number;
+  activeColor: Color;
+  inactiveColor: Color;
+  circleColor: Color;
+};
+
+/**
+ * Normalizes slider options by resolving aliases to canonical property names.
+ */
+function normalizeSliderOptions(opts: SliderOptions): ResolvedSliderOptions {
+  const normalized = { ...opts };
+  // Handle aliases
+  if (normalized.handleRadius !== undefined && normalized.circleRadius === undefined) {
+    normalized.circleRadius = normalized.handleRadius;
+  }
+  if (normalized.trackColor !== undefined && normalized.inactiveColor === undefined) {
+    normalized.inactiveColor = normalized.trackColor;
+  }
+  if (normalized.handleColor !== undefined && normalized.circleColor === undefined) {
+    normalized.circleColor = normalized.handleColor;
+  }
+  if (normalized.value !== undefined && normalized.startingValue === undefined) {
+    normalized.startingValue = normalized.value;
+  }
+  if (normalized.min !== undefined && normalized.minValue === undefined) {
+    normalized.minValue = normalized.min;
+  }
+  if (normalized.max !== undefined && normalized.maxValue === undefined) {
+    normalized.maxValue = normalized.max;
+  }
+  // Defaults
+  normalized.startingValue = normalized.startingValue ?? 0;
+  normalized.minValue = normalized.minValue ?? 0;
+  normalized.maxValue = normalized.maxValue ?? 100;
+  normalized.circleRadius = normalized.circleRadius ?? 10;
+  normalized.activeColor = normalized.activeColor ?? 0x4a90d9;
+  normalized.inactiveColor = normalized.inactiveColor ?? 0x666666;
+  normalized.circleColor = normalized.circleColor ?? 0xffffff;
+  
+  // Normalize nested states
+  if (normalized.down) {
+    if (normalized.down.handleRadius !== undefined && normalized.down.circleRadius === undefined) {
+      normalized.down.circleRadius = normalized.down.handleRadius;
+    }
+    if (normalized.down.handleColor !== undefined && normalized.down.circleColor === undefined) {
+      normalized.down.circleColor = normalized.down.handleColor;
+    }
+  }
+  if (normalized.hover) {
+    if (normalized.hover.handleRadius !== undefined && normalized.hover.circleRadius === undefined) {
+      normalized.hover.circleRadius = normalized.hover.handleRadius;
+    }
+    if (normalized.hover.handleColor !== undefined && normalized.hover.circleColor === undefined) {
+      normalized.hover.circleColor = normalized.hover.handleColor;
+    }
+  }
+  
+  return normalized as ResolvedSliderOptions;
+}
+
+/**
+ * Draggable slider component for selecting numeric values.
+ * Features customizable handle appearance with state-specific styles for hover and pressed states.
+ * 
+ * @example
+ * ```typescript
+ * const slider = new Slider({
+ *   width: 200,
+ *   height: 4,
+ *   minValue: 0,
+ *   maxValue: 100,
+ *   startingValue: 50,
+ *   activeColor: 0x4a90d9,
+ *   inactiveColor: 0xcccccc,
+ *   circleRadius: 8,
+ *   circleColor: 0xffffff,
+ * });
+ * 
+ * slider.onChange((value) => console.log('Slider value:', value));
+ * stage.addChild(slider);
+ * ```
+ * 
+ * @extends PIXI.Container
+ */
 class Slider extends PIXI.Container {
+  /** Whether the slider handle is currently being dragged */
   isDragging: boolean;
   isHovered: boolean;
   curOutlineWidth: number;
   lastX: number;
   resolvedScale: { x: number; y: number; } | null;
-  options: SliderOptions;
+  options: ResolvedSliderOptions;
   currentValue: number;
   backgroundGraphic: PIXI.Graphics;
   circleRadius: number;
   circleGraphic: PIXI.Graphics;
+  private circleHandle: PixiElement;
 
-  constructor(t: SliderOptions) { // You need to define the type of 't'
+  /**
+   * Creates a new Slider instance.
+   * @param options - Configuration options for the slider appearance and behavior
+   */
+  constructor(t: SliderOptions) {
       super();
       this.isDragging = false;
       this.isHovered = false;
       this.curOutlineWidth = 0;
       this.lastX = 0;
       this.resolvedScale = null;
-      this.options = t;
+      this.options = normalizeSliderOptions(t);
       this.currentValue = this.options.startingValue;
 
       this.backgroundGraphic = new PIXI.Graphics();
@@ -61,25 +192,24 @@ class Slider extends PIXI.Container {
 
       this.circleRadius = this.options.circleRadius;
 
+      this.circleHandle = new PixiElement();
       this.circleGraphic = new PIXI.Graphics();
       this.circleGraphic.drawCircle(0, this.circleRadius, this.circleRadius);
-      this.circleGraphic.y = 0;
-      this.circleGraphic.buttonMode = true;
-      super.addChild(this.circleGraphic);
-      this.circleGraphic.interactive = true;
+      this.circleHandle.addChild(this.circleGraphic);
+      super.addChild(this.circleHandle);
 
       const e = (this.currentValue - this.options.minValue) / (this.options.maxValue - this.options.minValue);
-      this.circleGraphic.x = e * this.options.width;
+      this.circleHandle.x = e * this.options.width;
 
       this.redrawCircle();
       this.redrawBar();
 
-      this.circleGraphic.on("pointerover", t => {
+      // Hover state
+      this.circleHandle.onMouseOver(() => {
           this.isHovered = true;
           this.redrawCircle();
       });
-
-      this.circleGraphic.on("pointerout", () => {
+      this.circleHandle.onMouseOut(() => {
           if (this.isHovered) {
               this.isHovered = false;
               if (!this.isDragging) {
@@ -88,58 +218,35 @@ class Slider extends PIXI.Container {
           }
       });
 
-      this.circleGraphic.on("pointerdown", t => {
+      // Drag — PixiElement's framework handles window-level pointermove cleanup,
+      // so we just consume dragstart/dragmove/dragend here.
+      let startGlobalX = 0;
+      let startCircleX = 0;
+      this.circleHandle.onDragStart((event: PIXI.FederatedPointerEvent) => {
           this.resolvedScale = null;
           this.resolveScale();
           this.isDragging = true;
-          this.lastX = t.data.global.x;
+          startGlobalX = (event as any).global?.x ?? event.data?.global?.x ?? 0;
+          startCircleX = this.circleHandle.x;
           this.redrawCircle();
-      });
-
-      this.circleGraphic.on("pointercancel", () => {
-          if (this.isDragging) {
-              this.resolvedScale = null;
-              this.isDragging = false;
-              this.redrawCircle();
-          }
-      });
-
-      this.circleGraphic.on("pointerup", () => {
-          if (this.isDragging) {
-              this.resolvedScale = null;
-              this.isDragging = false;
-              this.redrawCircle();
-          }
-      });
-
-      this.circleGraphic.on("pointerupoutside", () => {
-          if (this.isDragging) {
-              this.resolvedScale = null;
-              this.isDragging = false;
-              this.redrawCircle();
-          }
-      });
-
-      this.circleGraphic.on("pointermove", t => {
+      }, 0);
+      this.circleHandle.onDragMove((event: PIXI.FederatedPointerEvent) => {
           if (!this.isDragging) return;
-
-          let e = t.data.global.x - this.lastX;
-          const i = this.options.preventScaleAdjustment ? 1 : this.resolveScale().x;
-
-          e *= i;
-
-          if ((e < 0 && t.data.global.x * i < this.x && this.circleGraphic.x === 0) || (e > 0 && t.data.global.x * i > this.options.width && this.circleGraphic.x === this.options.width)) return;
-
-          this.lastX = t.data.global.x;
-
-          const r = this.circleGraphic.x;
-          this.circleGraphic.x += e;
-          this.circleGraphic.x = Math.max(0, Math.min(this.circleGraphic.x, this.options.width));
-
-          if (this.circleGraphic.x - r) {
-              this.currentValue = this.calculateValue();
-              this.redrawBar();
-              super.emit("slider-change", this.currentValue);
+          const gx = (event as any).global?.x ?? event.data?.global?.x ?? 0;
+          const scale = this.options.preventScaleAdjustment ? 1 : this.resolveScale().x;
+          const targetX = startCircleX + (gx - startGlobalX) * scale;
+          const next = Math.max(0, Math.min(targetX, this.options.width));
+          if (next === this.circleHandle.x) return;
+          this.circleHandle.x = next;
+          this.currentValue = this.calculateValue();
+          this.redrawBar();
+          super.emit("slider-change", this.currentValue);
+      });
+      this.circleHandle.onDragEnd(() => {
+          if (this.isDragging) {
+              this.resolvedScale = null;
+              this.isDragging = false;
+              this.redrawCircle();
           }
       });
   }
@@ -160,7 +267,7 @@ class Slider extends PIXI.Container {
 
   calculateValue() {
       const { maxValue, minValue, width } = this.options;
-      const s = this.circleGraphic.x / width;
+      const s = this.circleHandle.x / width;
       return lerp(minValue, maxValue, s);
   }
 
@@ -178,7 +285,7 @@ class Slider extends PIXI.Container {
     } else if (this.isHovered && this.options.hover?.circleRadius) {
         circleRadius = this.options.hover.circleRadius;
     }
-    let circleColor = this.options.circleColor;
+    let circleColor: Color = this.options.circleColor as Color;
     if (this.isDragging && this.options.down?.circleColor) {
         circleColor = this.options.down.circleColor;
     } else if (this.isHovered && this.options.hover?.circleColor) {
@@ -192,7 +299,7 @@ class Slider extends PIXI.Container {
     } else if (this.options.circleOutlineWidth) {
         circleOutlineWidth = this.options.circleOutlineWidth;
     }
-    let circleOutlineColor = this.options.circleOutlineColor || 0x000000;
+    let circleOutlineColor: Color = this.options.circleOutlineColor ?? 0x000000;
     if (this.isDragging && this.options.down?.circleOutlineColor) {
         circleOutlineColor = this.options.down.circleOutlineColor;
     } else if (this.isHovered && this.options.hover?.circleOutlineColor) {
@@ -205,8 +312,10 @@ class Slider extends PIXI.Container {
         circleOutlineOpacity = this.options.hover.circleOutlineOpacity;
     }
 
-    this.circleGraphic.lineStyle(circleOutlineWidth, circleOutlineColor, circleOutlineOpacity);
-    this.circleGraphic.beginFill(circleColor, circleOpacity);
+    const fillColor = normalizeColor(circleColor);
+    const strokeColor = normalizeColor(circleOutlineColor);
+    this.circleGraphic.lineStyle(circleOutlineWidth, strokeColor.value, strokeColor.alpha * circleOutlineOpacity);
+    this.circleGraphic.beginFill(fillColor.value, fillColor.alpha * circleOpacity);
     this.circleGraphic.drawCircle(0, circleRadius, circleRadius);
     this.circleGraphic.endFill();
 
@@ -215,21 +324,31 @@ class Slider extends PIXI.Container {
 }
 
 redrawBar() {
-    const t = this.circleGraphic.x;
+    const t = this.circleHandle.x;
     const e = this.options.width - t;
     this.backgroundGraphic.clear();
     const i = this.options.opacity || 1;
-    this.backgroundGraphic.beginFill(this.options.activeColor, i);
+    const active = normalizeColor(this.options.activeColor);
+    const inactive = normalizeColor(this.options.inactiveColor);
+    this.backgroundGraphic.beginFill(active.value, active.alpha * i);
     this.backgroundGraphic.drawRect(0, 0, t, this.options.height);
     this.backgroundGraphic.endFill();
-    this.backgroundGraphic.beginFill(this.options.inactiveColor, i);
+    this.backgroundGraphic.beginFill(inactive.value, inactive.alpha * i);
     this.backgroundGraphic.drawRect(t, 0, e, this.options.height);
     this.backgroundGraphic.endFill();
 }
+  /**
+   * Removes a previously registered change listener.
+   * @param callback - The callback function to remove
+   */
   offChange(t: (v: number) => void) {
     super.off("slider-change", t);
   }
 
+  /**
+   * Registers a callback to be invoked when the slider value changes.
+   * @param callback - Function to call with the new slider value
+   */
   onChange(t: (v: number) => void) {
     super.on("slider-change", t);
   }
@@ -237,4 +356,5 @@ redrawBar() {
 function lerp(a: number, b: number, t: number): number {
     return (1 - t) * a + t * b;
 }
-export { Slider, SliderOptions };
+export { Slider };
+export type { SliderOptions };

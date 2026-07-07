@@ -2,23 +2,36 @@
   "compilerOptions": {
     "outDir": "./lib",
     "rootDir": "./src",
-    "baseUrl": ".",
-    "module": "commonjs",
-    "lib": ["dom", "es2016"],
-    "target": "es2015",
-    "declarationMap": true,
+
+    "target": "es2022",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["dom", "es2022"],
+
+    "strict": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": false,
+
     "declaration": true,
-    "noImplicitAny": false,
+    "declarationMap": true,
     "sourceMap": true,
-    "types": [ "mocha", "pixi.js"],
-    "moduleResolution": "node"
+
+    "types": ["mocha"]
   },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules/**/*",
-    "bin",
-    "lib"
-  ]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules/**/*", "bin", "lib"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "isolatedModules": false,
+      "verbatimModuleSyntax": false
+    }
+  }
 }

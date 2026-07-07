@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixiElement Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>PixiElement Component</h1>
+            <p>Base interactive element with drag, swipe, and gesture support.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Drag and drop functionality</li>
+                        <li>Swipe gesture detection</li>
+                        <li>Mouse and touch event handling</li>
+                        <li>Base class for all components</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>PixiElement Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// Draggable elements with AABB collision against canvas + each other.
+// makeDraggable() calls prop(label, options) and uses the (possibly
+// overridden) result so edits in the Prop Table flow into the live preview.
+const { PixiElement } = PIXI_DOM;
+
+stage.removeChildren();
+
+const W = 600, H = 400;
+const elements = [];
+
+const makeDraggable = (label, defaults) => {
+  const opts = prop(label, defaults);
+  const el = new PixiElement();
+  const g = new PIXI.Graphics();
+  g.beginFill(opts.color);
+  g.drawRoundedRect(0, 0, opts.size, opts.size, 12);
+  g.endFill();
+  el.addChild(g);
+  el.position.set(opts.x, opts.y);
+  el._w = opts.size;
+  el._h = opts.size;
+
+  let startGX = 0, startGY = 0, startEX = 0, startEY = 0;
+  el.onDragStart((e) => {
+    const p = e.data?.global ?? e.global;
+    startGX = p.x; startGY = p.y;
+    startEX = el.position.x; startEY = el.position.y;
+  });
+  el.onDragMove((e) => {
+    const p = e.data?.global ?? e.global;
+    let tx = Math.max(0, Math.min(startEX + (p.x - startGX), W - el._w));
+    let ty = Math.max(0, Math.min(startEY + (p.y - startGY), H - el._h));
+
+    // Resolve X first (lets you slide along an obstacle's Y edge).
+    for (const o of elements) {
+      if (o === el) continue;
+      const yOverlap = el.position.y < o.position.y + o._h && el.position.y + el._h > o.position.y;
+      if (yOverlap && tx < o.position.x + o._w && tx + el._w > o.position.x) {
+        tx = el.position.x + el._w <= o.position.x ? o.position.x - el._w : o.position.x + o._w;
+      }
+    }
+    el.position.x = tx;
+
+    // Then resolve Y.
+    for (const o of elements) {
+      if (o === el) continue;
+      const xOverlap = el.position.x < o.position.x + o._w && el.position.x + el._w > o.position.x;
+      if (xOverlap && ty < o.position.y + o._h && ty + el._h > o.position.y) {
+        ty = el.position.y + el._h <= o.position.y ? o.position.y - el._h : o.position.y + o._h;
+      }
+    }
+    el.position.y = ty;
+  });
+
+  elements.push(el);
+  stage.addChild(el);
+  return el;
+};
+
+makeDraggable('Element 1: Blue',   { color: 0x4a90d9, x:  60, y:  60, size: 80 });
+makeDraggable('Element 2: Green',  { color: 0x4cd964, x: 260, y:  60, size: 80 });
+makeDraggable('Element 3: Orange', { color: 0xff9500, x: 460, y:  60, size: 80 });
+makeDraggable('Element 4: Pink',   { color: 0xe85d75, x:  60, y: 240, size: 80 });
+makeDraggable('Element 5: Purple', { color: 0xa974ff, x: 260, y: 240, size: 80 });
+makeDraggable('Element 6: Teal',   { color: 0x49d8c8, x: 460, y: 240, size: 80 });`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

@@ -18,6 +18,8 @@ const renderStage = () => {
     adapter.renderContainer(renderer, stage);
 };
 
+const useWebgpu = new URLSearchParams(location.search).get('renderer') === 'webgpu';
+
 const run = async () => {
     const pixiVersion = typeof adapter.getPixiVersion === 'function'
         ? adapter.getPixiVersion()
@@ -29,7 +31,7 @@ const run = async () => {
         roundPixels: pixiVersion < 8,
         resolution: 1,
         canvas,
-        forceWebgl: true,
+        ...(useWebgpu ? { forceWebgpu: true } : { forceWebgl: true }),
     };
 
     try {

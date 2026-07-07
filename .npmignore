@@ -1,6 +1,18 @@
-.gitignore
-node_modules
-test
-src
-tsconfig.json
-example
+# What ships is whitelisted by `package.json#files` (globs that pick only
+# .js/.cjs/.mjs/.d.ts and skip pixi-bootstrap's internal declarations).
+# This file is kept as a belt-and-suspenders for files that might land in dist/
+# from new build steps in the future without updating package.json.
+
+*.map
+src/
+tests/
+test-results/
+playwright-report/
+example/
+demo/
+gh-pages/
+docs/
+scripts/
+coverage/
+*.log
+.DS_Store

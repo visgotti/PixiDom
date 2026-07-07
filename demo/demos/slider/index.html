@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slider Component - PixiDom</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <link rel="stylesheet" href="../../demo-styles.css">
+</head>
+<body>
+    <header class="demo-header">
+        <div class="container">
+            <a href="../../index.html" class="back-link">← Back to PixiDom</a>
+            <h1>Slider Component</h1>
+            <p>Draggable value slider with real-time feedback and customizable styling.</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="demo-layout">
+            <div>
+                <h2>Live Preview</h2>
+                <div class="demo-canvas-wrapper">
+                    <canvas id="canvas" width="600" height="400"></canvas>
+                </div>
+                <div class="demo-info" style="margin-top: 1rem;">
+                    <h3>Features</h3>
+                    <ul>
+                        <li>Smooth dragging with value constraints</li>
+                        <li>Customizable track and handle appearance</li>
+                        <li>Real-time value change callbacks</li>
+                        <li>Configurable min/max values</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h2>Slider Controls</h2>
+                <div id="demo-runner-host"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="../../shared/demo-loader.js"></script>
+    <script src="../../shared/demo-runner.js"></script>
+    <script>
+        const defaultCode = `// prop(label, options) returns a (possibly overridden) options object that
+// you pass into the component. Edits made in the Prop Table re-run the code
+// with the new values, so changes flow into the live preview.
+const { Slider } = PIXI_DOM;
+
+stage.removeChildren();
+
+const valueText = new PIXI.Text('Value: 50', { fill: 0xffffff, fontSize: 16 });
+valueText.position.set(50, 20);
+stage.addChild(valueText);
+
+const slider1Opts = prop('Slider 1: Default', {
+  x: 50, y: 60,
+  width: 300, height: 8, handleRadius: 12,
+  trackColor: 0x333333, handleColor: 0x4a90d9, activeColor: 0x4a90d9,
+  min: 0, max: 100, value: 50,
+});
+const slider1 = new Slider(slider1Opts);
+slider1.position.set(slider1Opts.x, slider1Opts.y);
+slider1.onChange((value) => {
+  valueText.text = \`Value: \${Math.round(value)}\`;
+  console.log('Slider value:', value);
+});
+stage.addChild(slider1);
+
+const slider2Opts = prop('Slider 2: Green', {
+  x: 50, y: 140,
+  width: 250, height: 6, handleRadius: 10,
+  trackColor: 0x444444, handleColor: 0x4cd964, activeColor: 0x4cd964,
+  min: 0, max: 100, value: 75,
+});
+const slider2 = new Slider(slider2Opts);
+slider2.position.set(slider2Opts.x, slider2Opts.y);
+stage.addChild(slider2);
+
+const slider3Opts = prop('Slider 3: Orange / large handle', {
+  x: 50, y: 200,
+  width: 200, height: 8, handleRadius: 14,
+  trackColor: 0x555555, handleColor: 0xff9500, activeColor: 0xff9500,
+  min: 0, max: 100, value: 25,
+});
+const slider3 = new Slider(slider3Opts);
+slider3.position.set(slider3Opts.x, slider3Opts.y);
+stage.addChild(slider3);`;
+
+        window.addEventListener('load', () => DemoRunner.init({ defaultCode }));
+    </script>
+</body>
+</html>

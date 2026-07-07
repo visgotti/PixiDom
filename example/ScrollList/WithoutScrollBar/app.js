@@ -38,6 +38,8 @@ const renderStage = () => {
     }
 };
 
+const useWebgpu = new URLSearchParams(location.search).get('renderer') === 'webgpu';
+
 const initializeRenderer = async () => {
     const rendererOptions = {
         width: RENDER_WIDTH,
@@ -48,6 +50,7 @@ const initializeRenderer = async () => {
         view: canvas,
         configureView: true,
         fallbackCanvas: canvas,
+        ...(useWebgpu ? { forceWebgpu: true } : { forceWebgl: true }),
     };
 
     try {
@@ -149,7 +152,7 @@ function createOptions(n, borderWidth) {
             isOver = true;
             if(isDown) return;
             g.clear();
-            g.lineStyle(5, 0xfffffff);
+            g.lineStyle(5, 0xffffff);
             g.beginFill(randomColor, 1);
             g.drawRect(5, 5, scrollListWidth - 10, 40);
             g.endFill();
@@ -157,7 +160,7 @@ function createOptions(n, borderWidth) {
         function drawDown() {
             isDown = true;
             g.clear();
-            g.lineStyle(10, 0xfffffff);
+            g.lineStyle(10, 0xffffff);
             g.beginFill(randomColor, 1);
             g.drawRect(10, 10, scrollListWidth - 20, 30);
             g.endFill();

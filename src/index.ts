@@ -1,3 +1,5 @@
+import './pixi-bootstrap';
+
 import { TextField } from './Components/TextInput/TextField';
 export * from './Components/TextInput/TextField';
 
@@ -22,6 +24,10 @@ export * from './Components/Slider';
 import FontLoader from './FontLoader';
 export { FontLoader };
 
+import { PixiAdapter } from './PixiAdapter';
+export { PixiAdapter };
+export type { CreateAppOptions } from './PixiAdapter';
+
 export {
     ensurePixiCanvasFallback,
     configureRendererView,
@@ -33,49 +39,77 @@ export {
     resolvePixiRenderer,
     ensurePixiGraphicsCompatibility,
     setBitmapTextTint,
+    getRendererCanvas,
+    getRendererResolution,
+    getRendererScreenSize,
+    getRendererPointerScale,
+    clientToStageCoords,
+    registerPixiRenderer,
+    findRendererForCanvas,
+    findCanvasFromEvent,
 } from './pixi-adapter-utils';
+export type { RendererPointerScale } from './pixi-adapter-utils';
 
 import { string2hex, centerPixiObject } from "./utils";
 import { ensurePixiGraphicsCompatibility } from './pixi-adapter-utils';
+import { normalizeColor, colorToInt, normalizeColorOr, safeColorInt } from './color';
 
 const utils = {
     centerPixiObject,
-    string2hex
+    string2hex,
+    normalizeColor,
+    colorToInt,
+    normalizeColorOr,
+    safeColorInt,
 }
 export { utils }
+export { normalizeColor, colorToInt, normalizeColorOr, safeColorInt } from './color';
+export type { Color, RGBColor, RGBTuple, RGBATuple, NormalizedColor } from './color';
 
 export * from './types';
 
-if (typeof PIXI !== 'undefined') {
+const populatePixiGlobalObj = (pixiAny: any) => {
+  pixiAny['Slider'] = pixiAny['Slider'] || Slider;
+  pixiAny['Toggle'] = pixiAny['Toggle'] || Toggle;
+  pixiAny['TextField'] = pixiAny['TextField'] || TextField;
+  pixiAny['Element'] = pixiAny['Element'] || PixiElement;
+  pixiAny['ScrollBar'] = pixiAny['ScrollBar'] || ScrollBar;
+  pixiAny['ScrollList'] = pixiAny['ScrollList'] || ScrollList;
+  pixiAny['Button'] = pixiAny['Button'] || Button;
+  pixiAny['FontLoader'] = pixiAny['FontLoader'] || FontLoader;
+  pixiAny['PixiAdapter'] = pixiAny['PixiAdapter'] || PixiAdapter;
+  const pixiUtils = pixiAny.utils || (pixiAny.utils = {});
+
+  if (typeof pixiUtils.string2hex !== 'function') {
+      pixiUtils.string2hex = string2hex;
+  }
+
+  if (typeof pixiUtils.hex2string !== 'function') {
+      pixiUtils.hex2string = (value: number) => {
+          const hex = safeColorInt(value).toString(16);
+          const padded = `000000${hex}`.slice(-6);
+          return `#${padded}`;
+      };
+  }
+
+  if (typeof pixiUtils.centerObject !== 'function') {
+      pixiUtils.centerObject = centerPixiObject;
+  }
+}
+
+const __pixiGlobalScope: any =
+    typeof globalThis !== 'undefined' ? globalThis
+    : typeof window !== 'undefined' ? window
+    : null;
+
+if (__pixiGlobalScope?.PIXI) {
     ensurePixiGraphicsCompatibility();
-    const pixiAny = PIXI as any;
+    populatePixiGlobalObj(__pixiGlobalScope.PIXI);
+}
 
-    pixiAny['Slider'] = pixiAny['Slider'] || Slider;
-    pixiAny['Toggle'] = pixiAny['Toggle'] || Toggle;
-    pixiAny['TextField'] = pixiAny['TextField'] || TextField;
-    pixiAny['Element'] = pixiAny['Element'] || PixiElement;
-    pixiAny['ScrollBar'] = pixiAny['ScrollBar'] || ScrollBar;
-    pixiAny['ScrollList'] = pixiAny['ScrollList'] || ScrollList;
-    pixiAny['Button'] = pixiAny['Button'] || Button;
-    pixiAny['FontLoader'] = pixiAny['FontLoader'] || FontLoader;
+let enforceWebgpu = false;
 
-    const pixiUtils = pixiAny.utils || (pixiAny.utils = {});
-
-    if (typeof pixiUtils.string2hex !== 'function') {
-        pixiUtils.string2hex = string2hex;
-    }
-
-    if (typeof pixiUtils.hex2string !== 'function') {
-        pixiUtils.hex2string = (value: number) => {
-            const numeric = (typeof value === 'number' && isFinite(value) ? value : 0) >>> 0;
-            const hex = (numeric & 0xffffff).toString(16);
-            const padded = `000000${hex}`.slice(-6);
-            return `#${padded}`;
-        };
-    }
-
-    if (typeof pixiUtils.centerObject !== 'function') {
-        pixiUtils.centerObject = centerPixiObject;
-    }
+export const enforceWebGPU = () => {
+  
 }
 

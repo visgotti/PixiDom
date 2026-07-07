@@ -1,6 +1,15 @@
 node_modules/
 .idea/
+.vscode/
 playwright-report/
 test-results/
 blob-report/
 dist/
+tmp/
+gh-pages/
+docs/
+*.log
+.DS_Store
+coverage/
+snapshot-report.html
+snapshot-report.md

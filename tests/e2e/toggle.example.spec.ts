@@ -8,11 +8,11 @@ test.beforeEach(async ({ page }) => {
   await setupDeterministicEnv(page);
 });
 
-test(`${EXAMPLE_NAME} example captures before and after toggling`, async ({ page }) => {
-  const pixiVersion = test.info().project.name;
+test(`${EXAMPLE_NAME} example captures before and after toggling`, async ({ page }, testInfo) => {
+  const pixiVersion = testInfo.project.name;
   await gotoExample(page, EXAMPLE_PATH, pixiVersion);
   await flushAnimationFrames(page);
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'before');
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'before', testInfo);
 
   await page.waitForFunction(
     () => {
@@ -49,6 +49,8 @@ test(`${EXAMPLE_NAME} example captures before and after toggling`, async ({ page
     });
   }
 
+  // Ensure the final two toggles have time to complete their animations
+  await page.waitForTimeout(100);
   await flushAnimationFrames(page);
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after');
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after', testInfo);
 });

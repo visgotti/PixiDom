@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["./src/index.ts"],
+  "out": "./docs",
+  "name": "PixiDom",
+  "readme": "./README.md",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "skipErrorChecking": true,
+  "categoryOrder": [
+    "Components",
+    "Types",
+    "Utilities",
+    "*"
+  ],
+  "navigationLinks": {
+    "GitHub": "https://github.com/visgotti/PixiDom",
+    "NPM": "https://www.npmjs.com/package/pixidom.js"
+  },
+  "searchInComments": true,
+  "cleanOutputDir": true
+}

@@ -5,7 +5,6 @@ const EXAMPLE_NAME = 'TextField';
 const EXAMPLE_PATH = '/example/TextField/example.html';
 const SAMPLE_TEXT = 'The quick brown fox jumped over the lazy dog.';
 const SELECT_ALL = process.platform === 'darwin' ? 'Meta+A' : 'Control+A';
-const resolvePixiVersion = () => test.info().project.name;
 
 const freezeTextFieldCursors = async (page: Page) => {
   return page.evaluate(() => {
@@ -30,8 +29,8 @@ test.beforeEach(async ({ page }) => {
   await setupDeterministicEnv(page);
 });
 
-test(`${EXAMPLE_NAME} example captures before and after typing`, async ({ page }) => {
-  await gotoExample(page, EXAMPLE_PATH, resolvePixiVersion());
+test(`${EXAMPLE_NAME} example captures before and after typing`, async ({ page }, testInfo) => {
+  await gotoExample(page, EXAMPLE_PATH, testInfo.project.name);
   await flushAnimationFrames(page);
   await page.waitForFunction(
     () => {
@@ -41,7 +40,9 @@ test(`${EXAMPLE_NAME} example captures before and after typing`, async ({ page }
     undefined,
     { timeout: 5_000 }
   );
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'before');
+  await freezeTextFieldCursors(page);
+  await flushAnimationFrames(page);
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'before', testInfo);
 
   const canvas = page.locator('#canvas');
   const box = await canvas.boundingBox();
@@ -71,12 +72,13 @@ test(`${EXAMPLE_NAME} example captures before and after typing`, async ({ page }
     });
     await flushAnimationFrames(page);
   }
-
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after');
+  await freezeTextFieldCursors(page);
+  await flushAnimationFrames(page);
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after', testInfo);
 });
 
-test(`${EXAMPLE_NAME} example highlights selection and clears text`, async ({ page }) => {
-  await gotoExample(page, EXAMPLE_PATH, resolvePixiVersion());
+test(`${EXAMPLE_NAME} example highlights selection and clears text`, async ({ page }, testInfo) => {
+  await gotoExample(page, EXAMPLE_PATH, testInfo.project.name);
   await flushAnimationFrames(page);
   await page.waitForFunction(
     () => {
@@ -114,7 +116,9 @@ test(`${EXAMPLE_NAME} example highlights selection and clears text`, async ({ pa
     }
   });
   await flushAnimationFrames(page);
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'select-all');
+  await freezeTextFieldCursors(page);
+  await flushAnimationFrames(page);
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'select-all', testInfo);
 
   await page.keyboard.press('Backspace');
   await page.evaluate(() => {
@@ -124,5 +128,7 @@ test(`${EXAMPLE_NAME} example highlights selection and clears text`, async ({ pa
     }
   });
   await flushAnimationFrames(page);
-  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after-backspace');
+  await freezeTextFieldCursors(page);
+  await flushAnimationFrames(page);
+  await expectCanvasSnapshot(page, EXAMPLE_NAME, 'after-backspace', testInfo);
 });
