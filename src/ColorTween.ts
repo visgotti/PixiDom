@@ -32,7 +32,10 @@ function hexStringToRgbArray(hex: string): RGB {
 
 function rgbArrayToHexString(rgb: RGB): string {
   const toHex = (v: number) => {
-    const base = v.toString(16);
+    // Interpolated channels are fractional; a raw toString(16) would emit
+    // invalid hex like "7f.8". Round and clamp into the 0-255 byte range.
+    const clamped = Math.min(255, Math.max(0, Math.round(v)));
+    const base = clamped.toString(16);
     return base.length === 1 ? '0' + base : base;
   };
   return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;

@@ -250,8 +250,8 @@ export class Button extends PixiElement {
                 this.addChild(this.bgSprite);
             }
             this.bgSprite.texture = backgroundTexture;
-            this.bgSprite.x = width / 2 - this.bgSprite.x / 2;
-            this.bgSprite.y = height / 2 - this.bgSprite.y / 2;
+            this.bgSprite.x = width / 2 - this.bgSprite.width / 2;
+            this.bgSprite.y = height / 2 - this.bgSprite.height / 2;
         }
         this.hitArea = new PIXI.Rectangle(0, 0, width, height);
     }

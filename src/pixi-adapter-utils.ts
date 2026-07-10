@@ -1,4 +1,4 @@
-import { safeColorInt } from './color';
+import { safeColorInt, normalizeColor as normalizeColorInput } from './color';
 
 let _global_pixi = typeof window !== 'undefined' ? (window as any).PIXI : null;
 
@@ -1208,14 +1208,12 @@ const resolveTintColor = (value: any): number | null => {
     return value;
   }
   if (typeof value === 'string') {
-    const pixiAny = PIXI as any;
-    const utils = pixiAny?.utils;
-    if (utils?.string2hex) {
-      try {
-        return utils.string2hex(value);
-      } catch (error) {
-        return null;
-      }
+    // Resolve via our own color pipeline rather than PIXI.utils.string2hex,
+    // which was removed in PIXI v8.
+    try {
+      return normalizeColorInput(value).value;
+    } catch (error) {
+      return null;
     }
   }
   return null;

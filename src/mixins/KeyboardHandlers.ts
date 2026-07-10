@@ -43,10 +43,10 @@ export default function <TBase extends Constructor>(Base: TBase){
         }
 
         public changeStateIndex(change: number) {
-            const newIndex = this.currentStateIndex = change;
-            if(this.textStates[newIndex]) {
+            const newIndex = this.currentStateIndex + change;
+            if(newIndex >= 0 && newIndex < this.textStates.length) {
                 super.change(this.textStates[newIndex]);
-                this.currentStateIndex = change;
+                this.currentStateIndex = newIndex;
             }
         }
 

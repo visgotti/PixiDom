@@ -1,5 +1,5 @@
 import { string2hex } from "../utils";
-import { normalizeColor, colorToInt, type NormalizedColor } from "../color";
+import { normalizeColor, colorToInt, colorToHexString, type NormalizedColor } from "../color";
 import ColorTween from '../ColorTween';
 import { ToggleOptions, ToggleAnimationExclusions } from "../types";
 import { BitmapTextLike, createBitmapText, setBitmapTextTint } from "../pixi-adapter-utils";
@@ -120,7 +120,7 @@ export class Toggle extends PIXI.Container {
 
             const onYDiff = options.height - this.onText.height;
             if(onYDiff < 0) { throw new Error('Label font is too large to fit within height of toggle, either increase height or use smaller font')};
-            this.onText.y = offYDiff / 2;
+            this.onText.y = onYDiff / 2;
             this.usingLabels = true;
         }
 
@@ -257,13 +257,13 @@ export class Toggle extends PIXI.Container {
         const inactiveColorsArray: string[] = [];
 
         if(!exclude || !exclude.includes(ToggleAnimationExclusions.background)) {
-            activeColorsArray.push(PIXI.utils.hex2string(this.activeBackgroundColor));
-            inactiveColorsArray.push(PIXI.utils.hex2string(this.inactiveBackgroundColor));
+            activeColorsArray.push(colorToHexString(this.activeBackgroundColor));
+            inactiveColorsArray.push(colorToHexString(this.inactiveBackgroundColor));
             this.backgroundColorsArrayIndex = 0;
         }
         if(!exclude || !exclude.includes(ToggleAnimationExclusions.circle_color)) {
-            activeColorsArray.push(PIXI.utils.hex2string(this.activeCircleColor));
-            inactiveColorsArray.push(PIXI.utils.hex2string(this.inactiveCircleColor));
+            activeColorsArray.push(colorToHexString(this.activeCircleColor));
+            inactiveColorsArray.push(colorToHexString(this.inactiveCircleColor));
             this.circleColorsArrayIndex = activeColorsArray.length - 1;
         }
         this.tween = new ColorTween(inactiveColorsArray, activeColorsArray)

@@ -541,10 +541,12 @@ export class ScrollList extends PIXI.Container {
     }
 
     set currentScroll(value) {
+        // When content is shorter than the viewport the max scroll is 0, not negative.
+        const maxScroll = Math.max(0, this.maxHeight - this.__height);
         if(value < 0) {
             value = 0;
-        } else if (value > this.maxHeight - this.__height) {
-            value = this.maxHeight - this.__height
+        } else if (value > maxScroll) {
+            value = maxScroll;
         }
         this._currentScroll = value;
         if (this.scrollBar && this._needsUpdateScoller) {
@@ -617,10 +619,10 @@ export class ScrollList extends PIXI.Container {
                 return !(indexesToRemove.includes(i));
             });
 
-            if(this._currentScroll > this.maxHeight - this.__height) {
-                this.currentScroll = this.maxHeight - this.__height;
-            }
             this.recalculateHeight();
+            if(this._currentScroll > this.maxHeight - this.__height) {
+                this.currentScroll = Math.max(0, this.maxHeight - this.__height);
+            }
             this.repositionOptions();
             this.adjustVisibility(null, true);
             this.redraw();

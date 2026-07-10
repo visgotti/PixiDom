@@ -48,7 +48,7 @@ const eventGlobalY = (event: PIXI.FederatedPointerEvent): number => {
 export class PixiElement extends PIXI.Container {
     /** Indicates whether the mouse/pointer is currently over this element */
     public isMouseOver: boolean = false;
-    private elements: Array<Element> = [];
+    private elements: Array<PixiElement> = [];
     /** Indicates whether the element is currently being dragged */
     public inDrag: boolean = false;
     private pointerIsDown: boolean = false;
@@ -202,8 +202,8 @@ export class PixiElement extends PIXI.Container {
      * @param element - The element to add
      * @throws Error if the element is not an instance of Element
      */
-    public addElement(element: Element) {
-        if (!(element instanceof Element)) {
+    public addElement(element: PixiElement) {
+        if (!(element instanceof PixiElement)) {
             throw new Error('addElement called with a non element object');
         }
         this.elements.push(element);
@@ -213,7 +213,7 @@ export class PixiElement extends PIXI.Container {
      * Removes an element from the internal elements array.
      * @param element - The element to remove
      */
-    public removeElement(element: Element) {
+    public removeElement(element: PixiElement) {
         this.elements = this.elements.filter((e) => e !== element);
     }
 

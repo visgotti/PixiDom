@@ -211,6 +211,15 @@ export function colorToInt(input: Color): number {
 }
 
 /**
+ * Convert any {@link Color} to a css-style `#rrggbb` string (alpha discarded).
+ * Version-independent replacement for `PIXI.utils.hex2string`, which was
+ * removed in PIXI v8.
+ */
+export function colorToHexString(input: Color): string {
+    return `#${normalizeColor(input).value.toString(16).padStart(6, '0')}`;
+}
+
+/**
  * Normalize a color when one is provided, otherwise return the fallback.
  * The fallback is also normalized so callers always get a valid result.
  */
