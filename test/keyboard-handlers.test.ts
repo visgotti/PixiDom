@@ -333,6 +333,56 @@ describe('KeyboardHandlers undo/redo state history', () => {
         expect(input.currentText, 'deletion must be blocked').to.equal('a');
     });
 
+    it('Enter inserts a newline when Enter is not a submit key (multi-line inputs)', () => {
+        const input = new KeyboardInput();
+        input.submitKeyCodes = [];
+        input.onKeyPress(keyPress(97)); // 'a'
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => seen.push(event));
+
+        input.onKeyPress({ ...keyPress(13), key: 'Enter', code: 'Enter' });
+
+        expect(input.currentText).to.equal('a\n');
+        expect(seen[0].inputType).to.equal('insertText');
+        expect(seen[0].data).to.equal('\n');
+    });
+
+    it('Enter still submits (and inserts nothing) when configured as a submit key', () => {
+        class SubmittableInput extends FakeTextInput {
+            submitted = 0;
+            override submit() {
+                this.submitted++;
+            }
+        }
+        const input = new (KeyboardHandlerMixin(SubmittableInput))();
+        input.onKeyPress(keyPress(97));
+
+        input.onKeyPress({ ...keyPress(13), key: 'Enter', code: 'Enter' });
+        input.onKeyDown(keyDown(13, 'Enter'));
+
+        expect(input.currentText).to.equal('a');
+        expect(input.submitted).to.equal(1);
+    });
+
+    it('ArrowUp/ArrowDown keydowns invoke the overridable hooks', () => {
+        const moves: string[] = [];
+        class VerticalInput extends KeyboardInput {
+            override onArrowUp() {
+                moves.push('up');
+            }
+            override onArrowDown() {
+                moves.push('down');
+            }
+        }
+        const input = new VerticalInput();
+
+        input.onKeyDown(keyDown(38, 'ArrowUp'));
+        input.onKeyDown(keyDown(40, 'ArrowDown'));
+
+        expect(moves).to.deep.equal(['up', 'down']);
+    });
+
     it('inserts a character exactly once for key-only keypress events (no keyCode)', () => {
         const input = new KeyboardInput();
         input.onKeyPress({

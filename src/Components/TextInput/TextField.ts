@@ -3,6 +3,7 @@ import { normalizeColor, type Color, type NormalizedColor } from "../../color";
 import KeyboardHandlerMixin, { IKeyboardBase } from "../../mixins/KeyboardHandlers";
 import type { ValidMeasurement } from "../../types";
 import { BitmapTextLike, createBitmapText, getBitmapTextGlyphs, setBitmapTextTint, drawFilledRect } from "../../pixi-adapter-utils";
+import { caretColFromX, glyphsToCaretPositions } from "../../text-layout";
 
 /**
  * Internal style options with parsed measurements.
@@ -476,18 +477,16 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
     }
 
     private getCursorXFromIndex(index: number): number {
-        const glyphs = this.getGlyphs();
+        const glyphs = this.getGlyphs() as unknown as Array<{ x: number; width: number }>;
         const xPadding = this.styleOptions.xPadding ?? 0;
         if(!glyphs.length || index <= 0) {
             return xPadding;
         }
 
-        const clampedIndex = Math.min(index, glyphs.length);
-        const leftChar = glyphs[clampedIndex - 1] as any;
-        const baseX = typeof leftChar?.x === "number" ? leftChar.x : 0;
-        const width = typeof leftChar?.width === "number" ? leftChar.width : 0;
-        // get the position of character to left plus 1 pixel for padding
-        return baseX + width + 1 + xPadding;
+        const positions = glyphsToCaretPositions(glyphs);
+        const col = Math.min(index, positions.length - 1);
+        // caret sits 1px to the right of the character on its left
+        return positions[col] + 1 + xPadding;
     }
 
     public setCursor(index: number) {
@@ -514,19 +513,11 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
             return 0;
         }
 
-        const glyphs = this.getGlyphs();
-        for(let i = 0; i < glyphs.length; i++) {
-            const charChild = glyphs[i] as any;
-            if(charChild.x + charChild.width > x) {
-                // click was on right side of character, current cursor index becomes i+1
-                if(charChild.x + (charChild.width / 2) < x) {
-                    return i+1;
-                } else {
-                    return i;
-                }
-            }
+        const glyphs = this.getGlyphs() as unknown as Array<{ x: number; width: number }>;
+        if(!glyphs.length) {
+            return 0;
         }
-        return glyphs.length;
+        return caretColFromX(glyphsToCaretPositions(glyphs), x);
     }
 
     public getSelectedChars() {

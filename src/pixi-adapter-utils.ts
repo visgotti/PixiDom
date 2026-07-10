@@ -1810,6 +1810,65 @@ export const getBitmapTextGlyphs = (bitmapText: BitmapTextLike): PIXI.DisplayObj
   return virtualGlyphs as unknown as PIXI.DisplayObject[];
 };
 
+export type BitmapFontMeasure = {
+  /** Advance for `char` following `prevChar` (kerning-aware), in pixels at the target size. */
+  measure: (char: string, prevChar: string | null) => number;
+  /** Line height in pixels at the target size. */
+  lineHeight: number;
+};
+
+/**
+ * Build a glyph-measurement function from a registered bitmap font's metrics,
+ * scaled to `fontSize` (defaults to the font's own base size). Returns null
+ * when the font isn't in any cache — callers should fall back or inject their
+ * own measure. Used by layout-driven components (TextArea) so the same pure
+ * text-layout math works against real font metrics.
+ */
+export const createBitmapFontMeasure = (
+  fontFamily: string,
+  fontSize?: number,
+): BitmapFontMeasure | null => {
+  const family = normalizeFontFamilyName(fontFamily);
+  const entry = getBitmapFontCacheEntry(family);
+  if (!entry || !entry.chars) {
+    return null;
+  }
+
+  const baseFontSize =
+    entry.baseMeasurementFontSize ??
+    entry.baseRenderedFontSize ??
+    entry.fontSize ??
+    entry.size ??
+    16;
+  const targetSize = fontSize ?? baseFontSize;
+  const scale = targetSize / baseFontSize;
+  const rawLineHeight =
+    entry.lineHeight ??
+    entry.common?.lineHeight ??
+    baseFontSize;
+
+  const chars = entry.chars;
+  const getCharData = (char: string): any => {
+    if (chars instanceof Map) {
+      return chars.get(char.charCodeAt(0)) ?? chars.get(char);
+    }
+    return chars[char] ?? chars[char.charCodeAt(0)];
+  };
+
+  return {
+    lineHeight: rawLineHeight * scale,
+    measure: (char: string, prevChar: string | null) => {
+      const data = getCharData(char);
+      if (!data) {
+        return 8 * scale;
+      }
+      const kerning = (data.kerning && prevChar && data.kerning[prevChar]) || 0;
+      const advance = data.xAdvance ?? data.texture?.frame?.width ?? data.width ?? 8;
+      return (advance + kerning) * scale;
+    },
+  };
+};
+
 export const setBitmapTextTint = (
   bitmapText: BitmapTextLike | null | undefined,
   tint: number | string | null | undefined

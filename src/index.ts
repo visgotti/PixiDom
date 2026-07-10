@@ -3,6 +3,11 @@ import './pixi-bootstrap';
 import { TextField } from './Components/TextInput/TextField';
 export * from './Components/TextInput/TextField';
 
+import { TextArea } from './Components/TextArea';
+export * from './Components/TextArea';
+
+export * from './text-layout';
+
 export * from "./Element";
 import { PixiElement } from "./Element";
 
@@ -73,6 +78,7 @@ const populatePixiGlobalObj = (pixiAny: any) => {
   pixiAny['Slider'] = pixiAny['Slider'] || Slider;
   pixiAny['Toggle'] = pixiAny['Toggle'] || Toggle;
   pixiAny['TextField'] = pixiAny['TextField'] || TextField;
+  pixiAny['TextArea'] = pixiAny['TextArea'] || TextArea;
   pixiAny['Element'] = pixiAny['Element'] || PixiElement;
   pixiAny['ScrollBar'] = pixiAny['ScrollBar'] || ScrollBar;
   pixiAny['ScrollList'] = pixiAny['ScrollList'] || ScrollList;

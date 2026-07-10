@@ -169,6 +169,10 @@ export default function <TBase extends Constructor>(Base: TBase){
 
         public onBackspace(){};
         public onDelete(){};
+        /** Overridable hook: ArrowUp keydown (multi-line inputs move the caret up a line). */
+        public onArrowUp(_event?: unknown){};
+        /** Overridable hook: ArrowDown keydown (multi-line inputs move the caret down a line). */
+        public onArrowDown(_event?: unknown){};
 
         public onKeyDown(event: Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>) {
             const code = event.keyCode ?? event.which;
@@ -190,6 +194,10 @@ export default function <TBase extends Constructor>(Base: TBase){
                 } else {
                     super.setCursor(indexes.end);
                 }
+            } else if (code == 38 || key === "ArrowUp") { // up
+                this.onArrowUp(event);
+            } else if (code == 40 || key === "ArrowDown") { // down
+                this.onArrowDown(event);
             } else if(code == 8 || key === "Backspace") { // backspace
                 if(this.dispatchBeforeInput('deleteContentBackward', null, event)) {
                     if(super.getSelectedRange()) {
@@ -229,7 +237,8 @@ export default function <TBase extends Constructor>(Base: TBase){
                 return;
             }
             if(code !== null && code !== undefined) {
-                const char = String.fromCharCode(code);
+                // Enter arrives as '\r' from fromCharCode; text stores '\n'.
+                const char = code === 13 ? '\n' : String.fromCharCode(code);
                 if(char) {
                     event.preventDefault();
                     if(this.dispatchBeforeInput('insertText', char, event)) {
@@ -273,7 +282,12 @@ export default function <TBase extends Constructor>(Base: TBase){
                     "F12"
                   ];
                 
-                if(emptyStringKeys.includes(key)) {
+                if(key === 'Enter' || event.key === 'Enter') {
+                    event.preventDefault();
+                    if(this.dispatchBeforeInput('insertText', '\n', event)) {
+                        this.addState(super.replaceSelectedWith('\n'));
+                    }
+                } else if(emptyStringKeys.includes(key)) {
                     event.preventDefault();
                     if(this.dispatchBeforeInput('deleteContentBackward', null, event)) {
                         this.addState(super.replaceSelectedWith(''));

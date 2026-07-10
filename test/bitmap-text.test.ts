@@ -3,8 +3,8 @@ import { installFakePixi } from './helpers/fake-pixi';
 
 installFakePixi(); // v8-style global: no PIXI.utils
 
-const { createBitmapText, setBitmapTextTint, imageBitmapToTexture } = require('../src/pixi-adapter-utils') as
-    typeof import('../src/pixi-adapter-utils');
+const { createBitmapText, setBitmapTextTint, imageBitmapToTexture, createBitmapFontMeasure } =
+    require('../src/pixi-adapter-utils') as typeof import('../src/pixi-adapter-utils');
 
 describe('setBitmapTextTint', () => {
     it('applies numeric tints', () => {
@@ -25,6 +25,37 @@ describe('setBitmapTextTint', () => {
         setBitmapTextTint(text, 0x123456);
         expect(() => setBitmapTextTint(text, 'not-a-color')).to.not.throw();
         expect((text as any).tint).to.equal(0x123456);
+    });
+});
+
+describe('createBitmapFontMeasure', () => {
+    it('builds a kerning-aware measure scaled to the requested font size', () => {
+        const pixi = (globalThis as any).PIXI;
+        pixi.BitmapFont = {
+            available: {
+                MeasuredFont: {
+                    fontSize: 10,
+                    lineHeight: 12,
+                    chars: {
+                        a: { xAdvance: 5 },
+                        b: { xAdvance: 7, kerning: { a: 1 } },
+                    },
+                },
+            },
+        };
+        try {
+            const metrics = createBitmapFontMeasure('MeasuredFont', 20)!;
+            expect(metrics, 'metrics resolved from the font cache').to.exist;
+            expect(metrics.lineHeight).to.equal(24); // 12 * (20/10)
+            expect(metrics.measure('a', null)).to.equal(10); // 5 * 2
+            expect(metrics.measure('b', 'a')).to.equal(16); // (7 + 1) * 2
+        } finally {
+            delete pixi.BitmapFont;
+        }
+    });
+
+    it('returns null when the font is not registered', () => {
+        expect(createBitmapFontMeasure('NoSuchFont')).to.equal(null);
     });
 });
 
