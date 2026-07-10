@@ -139,17 +139,43 @@ class FakeContainer extends FakeEventEmitter {
     }
 }
 
-/** Graphics that records draw calls so tests can assert on drawing behavior. */
+/**
+ * Graphics that records draw calls so tests can assert on drawing behavior.
+ * Like real PIXI Graphics, width/height derive from the drawn geometry
+ * (unless a test sets them explicitly).
+ */
 class FakeGraphics extends FakeContainer {
     calls: Array<{ method: string; args: any[] }> = [];
+    private _boundsW = 0;
+    private _boundsH = 0;
+
+    override get width() {
+        return this._width || this._boundsW;
+    }
+    override set width(v: number) {
+        this._width = v;
+    }
+    override get height() {
+        return this._height || this._boundsH;
+    }
+    override set height(v: number) {
+        this._height = v;
+    }
 
     private _record(method: string, args: any[]) {
         this.calls.push({ method, args });
         return this;
     }
 
+    private _grow(maxX: number, maxY: number) {
+        this._boundsW = Math.max(this._boundsW, maxX);
+        this._boundsH = Math.max(this._boundsH, maxY);
+    }
+
     clear() {
         this.calls.push({ method: 'clear', args: [] });
+        this._boundsW = 0;
+        this._boundsH = 0;
         return this;
     }
     beginFill(...args: any[]) {
@@ -161,14 +187,17 @@ class FakeGraphics extends FakeContainer {
     lineStyle(...args: any[]) {
         return this._record('lineStyle', args);
     }
-    drawRect(...args: any[]) {
-        return this._record('drawRect', args);
+    drawRect(x = 0, y = 0, w = 0, h = 0) {
+        this._grow(x + w, y + h);
+        return this._record('drawRect', [x, y, w, h]);
     }
-    drawRoundedRect(...args: any[]) {
-        return this._record('drawRoundedRect', args);
+    drawRoundedRect(x = 0, y = 0, w = 0, h = 0, r = 0) {
+        this._grow(x + w, y + h);
+        return this._record('drawRoundedRect', [x, y, w, h, r]);
     }
-    drawCircle(...args: any[]) {
-        return this._record('drawCircle', args);
+    drawCircle(x = 0, y = 0, r = 0) {
+        this._grow(x + r, y + r);
+        return this._record('drawCircle', [x, y, r]);
     }
     moveTo(...args: any[]) {
         return this._record('moveTo', args);
@@ -176,14 +205,17 @@ class FakeGraphics extends FakeContainer {
     lineTo(...args: any[]) {
         return this._record('lineTo', args);
     }
-    rect(...args: any[]) {
-        return this._record('rect', args);
+    rect(x = 0, y = 0, w = 0, h = 0) {
+        this._grow(x + w, y + h);
+        return this._record('rect', [x, y, w, h]);
     }
-    roundRect(...args: any[]) {
-        return this._record('roundRect', args);
+    roundRect(x = 0, y = 0, w = 0, h = 0, r = 0) {
+        this._grow(x + w, y + h);
+        return this._record('roundRect', [x, y, w, h, r]);
     }
-    circle(...args: any[]) {
-        return this._record('circle', args);
+    circle(x = 0, y = 0, r = 0) {
+        this._grow(x + r, y + r);
+        return this._record('circle', [x, y, r]);
     }
     poly(...args: any[]) {
         return this._record('poly', args);
@@ -193,6 +225,40 @@ class FakeGraphics extends FakeContainer {
     }
     stroke(...args: any[]) {
         return this._record('stroke', args);
+    }
+}
+
+class FakeBaseTexture extends FakeEventEmitter {
+    source: any;
+    width = 0;
+    height = 0;
+    hasLoaded = false;
+    valid = false;
+
+    constructor(source: any = null) {
+        super();
+        this.source = source;
+        if (source && typeof source === 'object') {
+            this.width = source.width ?? 0;
+            this.height = source.height ?? 0;
+        }
+    }
+
+    _sourceLoaded() {
+        this.hasLoaded = true;
+        this.valid = true;
+    }
+}
+
+class FakeTexture {
+    baseTexture: FakeBaseTexture;
+
+    constructor(base: any) {
+        this.baseTexture = base instanceof FakeBaseTexture ? base : new FakeBaseTexture(base);
+    }
+
+    static from(source: any) {
+        return new FakeTexture(source);
     }
 }
 
@@ -290,6 +356,8 @@ export const createFakePixi = (version = '8.5.1'): FakePixiNamespace => ({
     Sprite: FakeSprite,
     Text: FakeText,
     BitmapText: FakeBitmapText,
+    BaseTexture: FakeBaseTexture,
+    Texture: FakeTexture,
 });
 
 /**
@@ -300,6 +368,18 @@ export const installFakePixi = (version = '8.5.1'): FakePixiNamespace => {
     const fake = createFakePixi(version);
     (globalThis as any).PIXI = fake;
     (globalThis as any).window = (globalThis as any).window ?? globalThis;
+    if (typeof (globalThis as any).document === 'undefined') {
+        (globalThis as any).document = {
+            addEventListener() {},
+            removeEventListener() {},
+            createElement: (tag: string) => ({
+                tag,
+                width: 0,
+                height: 0,
+                getContext: () => ({ drawImage() {} }),
+            }),
+        };
+    }
     if (typeof (globalThis as any).requestAnimationFrame !== 'function') {
         (globalThis as any).requestAnimationFrame = (cb: (t: number) => void) =>
             setTimeout(() => cb(Date.now()), 16);
@@ -308,4 +388,14 @@ export const installFakePixi = (version = '8.5.1'): FakePixiNamespace => {
     return fake;
 };
 
-export { FakeContainer, FakeGraphics, FakeSprite, FakeText, FakeBitmapText, FakeRectangle, FakePoint };
+export {
+    FakeContainer,
+    FakeGraphics,
+    FakeSprite,
+    FakeText,
+    FakeBitmapText,
+    FakeRectangle,
+    FakePoint,
+    FakeBaseTexture,
+    FakeTexture,
+};

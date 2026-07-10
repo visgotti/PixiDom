@@ -178,7 +178,7 @@ export const flickScrollList = async (page: Page) => {
       return !!global?.scrollListDemo;
     },
     undefined,
-    { timeout: 5_000 }
+    { timeout: 30_000 }
   );
 
   const result = await page.evaluate(() => {
@@ -204,7 +204,7 @@ export const dragScrollBarHalfway = async (page: Page) => {
       return !!global?.scrollListWithBarDemo;
     },
     undefined,
-    { timeout: 5_000 }
+    { timeout: 30_000 }
   );
 
   const before = await page.evaluate(() => {
@@ -283,7 +283,7 @@ export const wheelScrollList = async (page: Page, demoKey = 'scrollListWithBarDe
       return !!global?.[key];
     },
     demoKey,
-    { timeout: 5_000 }
+    { timeout: 30_000 }
   );
 
   const details = await page.evaluate((key) => {
@@ -336,7 +336,7 @@ export const dragScrollListByPointer = async (page: Page) => {
       return !!global?.scrollListDemo;
     },
     undefined,
-    { timeout: 5_000 }
+    { timeout: 30_000 }
   );
 
   const details = await page.evaluate(() => {

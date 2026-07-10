@@ -391,11 +391,12 @@ export class ScrollList extends PIXI.Container {
         if(force) {
             this.currentAdjustVisibilityDelta = 0;
         } else {
+            // Throttle: skip until enough time has accumulated, then recompute.
             this.currentAdjustVisibilityDelta += delta;
-            if(!force && this.currentAdjustVisibilityDelta >= this.performanceOptions.adjustVisibilityTime) {
-                this.currentAdjustVisibilityDelta = 0;
+            if(this.currentAdjustVisibilityDelta < this.performanceOptions.adjustVisibilityTime) {
                 return;
             }
+            this.currentAdjustVisibilityDelta = 0;
         }
         let setFirstVisible = false;
         for(let i = 0; i < this.options.length; i++) {

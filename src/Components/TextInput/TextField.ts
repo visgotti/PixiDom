@@ -282,13 +282,9 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
 
         const cursorHeight = type === "pixel" ? value : Math.round(this.textbox.height * (value/100));
 
-        const min = Math.min(this.textbox.height, cursorHeight);
-        const max = Math.max(this.textbox.height, cursorHeight);
-        const yOffset = (max - min) / 2; // centers cursor vertically
-        const bottomOffset = Math.floor(yOffset);
-        const topOffset = Math.ceil(yOffset);
-
-        this.cursorSprite.moveTo(cursorX, bottomOffset).lineTo(cursorX,  cursorHeight - topOffset);
+        // Center the cursor vertically and draw it at its full requested height.
+        const top = (this.textbox.height - cursorHeight) / 2;
+        this.cursorSprite.moveTo(cursorX, top).lineTo(cursorX, top + cursorHeight);
 
         // cursor is only visible if theres no range
         if(this.getSelectedRange()) {

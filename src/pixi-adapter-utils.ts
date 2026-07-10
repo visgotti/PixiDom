@@ -2191,9 +2191,8 @@ export const imageBitmapToTexture = (
      return new PIXI.Texture(base);
   }
 
-  // PIXI v5 → WebGL: manual GL upload, Canvas fallback if not WebGL
+  // PIXI v4 → WebGL: create a BaseTexture, mark it loaded, and upload it manually.
   if (pixiVersion >= 4) {
-      // v4 fallback — create a BaseTexture and mark it loaded so Pixi will treat it as valid.
       const baseTexture = new PIXI.BaseTexture(null as any);
 
       // attach the ImageBitmap as the "source"
@@ -2204,18 +2203,15 @@ export const imageBitmapToTexture = (
       // mark it as loaded/valid so Pixi won't try to re-upload or treat it as empty
       baseTexture.hasLoaded = true;
       (baseTexture as any).valid = true;
-  // if v4 exposes the internal helper, call it to run its update() logic
+      // if v4 exposes the internal helper, call it to run its update() logic
       if (typeof (baseTexture as any)._sourceLoaded === 'function') {
         try { (baseTexture as any)._sourceLoaded(); } catch (e) { /* ignore */ }
-      } else {
+      } else if (typeof (baseTexture as any).emit === 'function') {
         // fallback: emit loaded/update so listeners (and some code paths) pick it up
-        if (typeof (baseTexture as any).emit === 'function') {
-          try {
-            (baseTexture as any).emit('loaded', baseTexture);
-            (baseTexture as any).emit('update', baseTexture);
-          } catch (e) { /* ignore */ }
-        }
-        return PIXI.Texture.from(baseTexture);
+        try {
+          (baseTexture as any).emit('loaded', baseTexture);
+          (baseTexture as any).emit('update', baseTexture);
+        } catch (e) { /* ignore */ }
       }
 
       // force the renderer to upload the texture into GL (v4 renderer.textureManager exists)
@@ -2227,6 +2223,8 @@ export const imageBitmapToTexture = (
           console.warn('texture upload via textureManager failed, you may need manual GL upload', e);
         }
       }
+      // v4 has no Texture.from; the texture we just prepared IS the result.
+      return new PIXI.Texture(baseTexture);
   }
   // Fallback for any unknown version
   const canvas = imageBitmapToCanvas(imageBitmap);

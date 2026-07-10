@@ -29,6 +29,32 @@ describe('ScrollList scrolling bounds', () => {
         expect(list.currentScroll).to.equal(100);
     });
 
+    it('throttles visibility recomputation until adjustVisibilityTime accumulates', () => {
+        // Default performance options: visibilityBuffer 200, adjustVisibilityTime 130.
+        const items = Array.from({ length: 10 }, () => makeItem(100));
+        const list = new ScrollList(
+            { width: '100px', height: '100px' } as any,
+            items.map((container) => ({ container })),
+        );
+
+        // At scroll 0 the first item is visible and the sixth (y=500) is culled.
+        expect(items[0].visible).to.equal(true);
+        expect(items[5].visible).to.equal(false);
+
+        list.currentScroll = 500;
+
+        // Sub-threshold deltas must NOT recompute visibility yet.
+        (list as any).adjustVisibility(50);
+        (list as any).adjustVisibility(50);
+        expect(items[0].visible, 'stale visibility kept below threshold').to.equal(true);
+        expect(items[5].visible, 'stale visibility kept below threshold').to.equal(false);
+
+        // Crossing the threshold must recompute.
+        (list as any).adjustVisibility(50);
+        expect(items[0].visible, 'recomputed once threshold reached').to.equal(false);
+        expect(items[5].visible, 'recomputed once threshold reached').to.equal(true);
+    });
+
     it('clamps currentScroll to 0 when content is shorter than the viewport', () => {
         const list = new ScrollList({ width: '100px', height: '100px' } as any, [
             { container: makeItem(30) },

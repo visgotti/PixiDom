@@ -1,4 +1,5 @@
 export type IKeyboardBase = {
+    readonly text: string;
     ignoreKeys: Array<number | string>;
     submitKeyCodes: Array<number | string>;
     on: (event: string, handler: (event: any) => void) => void;
@@ -67,10 +68,7 @@ export default function <TBase extends Constructor>(Base: TBase){
 
         public onPaste(event: ClipboardEvent) {
             const pastedText = event.clipboardData ? event.clipboardData.getData('text/plain') : this.copiedText;
-            const newText = super.replaceSelectedWith(pastedText);
-            if(newText !== null) {
-                this.addState(newText);
-            }
+            this.addState(super.replaceSelectedWith(pastedText));
         }
 
         public onCopy(event: ClipboardEvent) {
@@ -89,10 +87,7 @@ export default function <TBase extends Constructor>(Base: TBase){
                 event.clipboardData.setData('text/plain', selected);
             }
             this.copiedText = selected;
-            const newText = super.replaceSelectedWith("");
-            if(newText !== null) {
-                this.addState(newText);
-            }
+            this.addState(super.replaceSelectedWith(""));
         };
 
         public onBackspace(){};
@@ -124,12 +119,14 @@ export default function <TBase extends Constructor>(Base: TBase){
                 } else {
                     super.removeLeftOfCursor();
                 }
+                this.addState(this.text);
             } else if (code == 46 || key === "Delete") { //delete
                 if(super.getSelectedRange()) {
                     super.replaceSelectedWith("");
                 } else {
                     super.removeRightOfCursor();
                 }
+                this.addState(this.text);
             } else if(event.ctrlKey || event.metaKey) {
                 if(code == 90 || key === "KeyZ") { // z
                     const indexChange = event.shiftKey ? 1 : -1; // if shift is pressed we want to do redo behavior
@@ -152,7 +149,7 @@ export default function <TBase extends Constructor>(Base: TBase){
                 const char = String.fromCharCode(code);
                 if(char) {
                     event.preventDefault();
-                    super.replaceSelectedWith(char);
+                    this.addState(super.replaceSelectedWith(char));
                 }
             } else if (key) {
                 const emptyStringKeys = [
@@ -193,29 +190,22 @@ export default function <TBase extends Constructor>(Base: TBase){
                 
                 if(emptyStringKeys.includes(key)) {
                     event.preventDefault();
-                    super.replaceSelectedWith('');
-                } else {
-                    if(event.key && event.key.length === 1) {
-                        event.preventDefault();
-                        super.replaceSelectedWith(event.key);
-                    }
-                }
-                    
-                if (key === "Backspace") {
-                } else if (key === "Delete") {
+                    this.addState(super.replaceSelectedWith(''));
+                } else if(event.key && event.key.length === 1) {
                     event.preventDefault();
-                    super.replaceSelectedWith('');
-                } else if (key && key.length === 1) {
-                    // Handle printable characters from `key`
-                    if (!event.ctrlKey && !event.metaKey) {
-                        event.preventDefault();
-                        super.replaceSelectedWith(key); // Insert the character
-                    }
+                    this.addState(super.replaceSelectedWith(event.key));
                 }
             }
         }
 
         public addState(newText: string) {
+            // No-op edits (e.g. paste blocked by maxCharacterLength) shouldn't
+            // create history entries, and editing after an undo discards the
+            // now-stale redo branch.
+            if(this.textStates[this.currentStateIndex] === newText) {
+                return;
+            }
+            this.textStates.splice(this.currentStateIndex + 1);
             this.textStates.push(newText);
             this.currentStateIndex = this.textStates.length - 1;
         }
