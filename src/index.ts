@@ -65,7 +65,7 @@ const utils = {
 export { utils }
 export { normalizeColor, colorToInt, colorToHexString, normalizeColorOr, safeColorInt } from './color';
 export type { Color, RGBColor, RGBTuple, RGBATuple, NormalizedColor } from './color';
-export type { BeforeInputEvent, HistoryInputType, IKeyboardBase } from './mixins/KeyboardHandlers';
+export type { BeforeInputEvent, InputType, HistoryInputType, IKeyboardBase } from './mixins/KeyboardHandlers';
 
 export * from './types';
 

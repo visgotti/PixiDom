@@ -227,6 +227,112 @@ describe('KeyboardHandlers undo/redo state history', () => {
         expect(input.currentText).to.equal('a');
     });
 
+    it('typing emits a cancelable beforeinput (insertText) carrying the character', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97)); // 'a', no listener yet
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onKeyPress(keyPress(98)); // 'b' must be blocked
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('insertText');
+        expect(seen[0].data).to.equal('b');
+        expect(input.currentText, 'insertion must be blocked').to.equal('a');
+        expect(input.textStates, 'no state recorded for blocked input').to.deep.equal(['a']);
+    });
+
+    it('backspace emits a cancelable beforeinput (deleteContentBackward)', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97));
+        input.onKeyPress(keyPress(98));
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onKeyDown(keyDown(8, 'Backspace'));
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('deleteContentBackward');
+        expect(input.currentText, 'deletion must be blocked').to.equal('ab');
+    });
+
+    it('delete emits a cancelable beforeinput (deleteContentForward)', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97));
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onKeyDown(keyDown(46, 'Delete'));
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('deleteContentForward');
+        expect(input.currentText).to.equal('a');
+    });
+
+    it('paste emits a cancelable beforeinput (insertFromPaste) carrying the pasted text', () => {
+        const input = new KeyboardInput();
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onPaste({
+            clipboardData: { getData: () => 'pasted' },
+            preventDefault() {},
+        } as any);
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('insertFromPaste');
+        expect(seen[0].data).to.equal('pasted');
+        expect(input.currentText, 'paste must be blocked').to.equal('');
+    });
+
+    it('cut emits a cancelable beforeinput (deleteByCut) but still populates the clipboard', () => {
+        // Fake with everything selected: cut copies the text and would clear it.
+        class AllSelectedInput extends FakeTextInput {
+            override getSelectedChars() {
+                return this.currentText;
+            }
+            override replaceSelectedWith(text: string) {
+                this.currentText = text;
+                return this.currentText;
+            }
+        }
+        const input = new (KeyboardHandlerMixin(AllSelectedInput))();
+        input.onKeyPress(keyPress(97));
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        let clipboard = '';
+        input.onCut({
+            clipboardData: { setData: (_type: string, value: string) => (clipboard = value) },
+            preventDefault() {},
+        } as any);
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('deleteByCut');
+        expect(clipboard, 'clipboard still set like the DOM').to.equal('a');
+        expect(input.currentText, 'deletion must be blocked').to.equal('a');
+    });
+
     it('inserts a character exactly once for key-only keypress events (no keyCode)', () => {
         const input = new KeyboardInput();
         input.onKeyPress({

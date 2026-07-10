@@ -5,13 +5,30 @@
 export type HistoryInputType = 'historyUndo' | 'historyRedo';
 
 /**
- * Cancelable event emitted as `'beforeinput'` right before an undo/redo is
- * applied — the same contract the DOM uses for ctrl+z: call `preventDefault()`
- * inside a listener to block the history change.
+ * Input type carried by cancelable `beforeinput` events, mirroring the DOM
+ * `InputEvent.inputType` values.
+ */
+export type InputType =
+    | 'insertText'
+    | 'insertFromPaste'
+    | 'deleteContentBackward'
+    | 'deleteContentForward'
+    | 'deleteByCut'
+    | HistoryInputType;
+
+type KeyboardLikeEvent = Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>;
+
+/**
+ * Cancelable event emitted as `'beforeinput'` right before text is mutated or
+ * an undo/redo is applied — the same contract the DOM uses: call
+ * `preventDefault()` inside a listener to block the operation.
  *
  * @example
  * ```typescript
  * textField.on('beforeinput', (event) => {
+ *   if (event.inputType === 'insertText' && event.data === '!') {
+ *     event.preventDefault(); // reject exclamation marks
+ *   }
  *   if (event.inputType === 'historyUndo') {
  *     event.preventDefault(); // handle undo yourself
  *   }
@@ -19,12 +36,14 @@ export type HistoryInputType = 'historyUndo' | 'historyRedo';
  * ```
  */
 export type BeforeInputEvent = {
-    inputType: HistoryInputType;
+    inputType: InputType;
+    /** Text being inserted (`insertText`/`insertFromPaste`), null for deletions and history. */
+    data: string | null;
     readonly cancelable: true;
     defaultPrevented: boolean;
     preventDefault(): void;
-    /** The keyboard event that triggered the history change. */
-    nativeEvent: Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>;
+    /** The keyboard or clipboard event that triggered the operation. */
+    nativeEvent: KeyboardLikeEvent | ClipboardEvent;
 };
 
 export type IKeyboardBase = {
@@ -73,6 +92,28 @@ export default function <TBase extends Constructor>(Base: TBase){
             this.on('blur', this.unregisterHandlers);
         }
 
+        /**
+         * Emit a cancelable `beforeinput` event for an impending operation.
+         * Returns true when the operation may proceed (nothing called
+         * `preventDefault()`), matching the DOM `beforeinput` contract.
+         */
+        public dispatchBeforeInput(
+            inputType: InputType,
+            data: string | null,
+            nativeEvent: BeforeInputEvent['nativeEvent'],
+        ): boolean {
+            const beforeInput: BeforeInputEvent = {
+                inputType,
+                data,
+                cancelable: true,
+                defaultPrevented: false,
+                preventDefault() { this.defaultPrevented = true; },
+                nativeEvent,
+            };
+            this.emit('beforeinput', beforeInput);
+            return !beforeInput.defaultPrevented;
+        }
+
         public changeStateIndex(change: number) {
             const newIndex = this.currentStateIndex + change;
             if(newIndex >= 0 && newIndex < this.textStates.length) {
@@ -98,7 +139,9 @@ export default function <TBase extends Constructor>(Base: TBase){
 
         public onPaste(event: ClipboardEvent) {
             const pastedText = event.clipboardData ? event.clipboardData.getData('text/plain') : this.copiedText;
-            this.addState(super.replaceSelectedWith(pastedText));
+            if(this.dispatchBeforeInput('insertFromPaste', pastedText, event)) {
+                this.addState(super.replaceSelectedWith(pastedText));
+            }
         }
 
         public onCopy(event: ClipboardEvent) {
@@ -117,7 +160,11 @@ export default function <TBase extends Constructor>(Base: TBase){
                 event.clipboardData.setData('text/plain', selected);
             }
             this.copiedText = selected;
-            this.addState(super.replaceSelectedWith(""));
+            // The clipboard is populated regardless (as in the DOM); only the
+            // deletion is cancelable.
+            if(this.dispatchBeforeInput('deleteByCut', null, event)) {
+                this.addState(super.replaceSelectedWith(""));
+            }
         };
 
         public onBackspace(){};
@@ -144,31 +191,27 @@ export default function <TBase extends Constructor>(Base: TBase){
                     super.setCursor(indexes.end);
                 }
             } else if(code == 8 || key === "Backspace") { // backspace
-                if(super.getSelectedRange()) {
-                    super.replaceSelectedWith("");
-                } else {
-                    super.removeLeftOfCursor();
+                if(this.dispatchBeforeInput('deleteContentBackward', null, event)) {
+                    if(super.getSelectedRange()) {
+                        super.replaceSelectedWith("");
+                    } else {
+                        super.removeLeftOfCursor();
+                    }
+                    this.addState(this.text);
                 }
-                this.addState(this.text);
             } else if (code == 46 || key === "Delete") { //delete
-                if(super.getSelectedRange()) {
-                    super.replaceSelectedWith("");
-                } else {
-                    super.removeRightOfCursor();
+                if(this.dispatchBeforeInput('deleteContentForward', null, event)) {
+                    if(super.getSelectedRange()) {
+                        super.replaceSelectedWith("");
+                    } else {
+                        super.removeRightOfCursor();
+                    }
+                    this.addState(this.text);
                 }
-                this.addState(this.text);
             } else if(event.ctrlKey || event.metaKey) {
                 if(code == 90 || key === "KeyZ") { // z
                     const indexChange = event.shiftKey ? 1 : -1; // if shift is pressed we want to do redo behavior
-                    const beforeInput: BeforeInputEvent = {
-                        inputType: indexChange === 1 ? 'historyRedo' : 'historyUndo',
-                        cancelable: true,
-                        defaultPrevented: false,
-                        preventDefault() { this.defaultPrevented = true; },
-                        nativeEvent: event,
-                    };
-                    this.emit('beforeinput', beforeInput);
-                    if(!beforeInput.defaultPrevented) {
+                    if(this.dispatchBeforeInput(indexChange === 1 ? 'historyRedo' : 'historyUndo', null, event)) {
                         this.changeStateIndex(indexChange);
                     }
                 } else if(code == 65 || key === "KeyA") { // a
@@ -189,7 +232,9 @@ export default function <TBase extends Constructor>(Base: TBase){
                 const char = String.fromCharCode(code);
                 if(char) {
                     event.preventDefault();
-                    this.addState(super.replaceSelectedWith(char));
+                    if(this.dispatchBeforeInput('insertText', char, event)) {
+                        this.addState(super.replaceSelectedWith(char));
+                    }
                 }
             } else if (key) {
                 const emptyStringKeys = [
@@ -230,10 +275,14 @@ export default function <TBase extends Constructor>(Base: TBase){
                 
                 if(emptyStringKeys.includes(key)) {
                     event.preventDefault();
-                    this.addState(super.replaceSelectedWith(''));
+                    if(this.dispatchBeforeInput('deleteContentBackward', null, event)) {
+                        this.addState(super.replaceSelectedWith(''));
+                    }
                 } else if(event.key && event.key.length === 1) {
                     event.preventDefault();
-                    this.addState(super.replaceSelectedWith(event.key));
+                    if(this.dispatchBeforeInput('insertText', event.key, event)) {
+                        this.addState(super.replaceSelectedWith(event.key));
+                    }
                 }
             }
         }
