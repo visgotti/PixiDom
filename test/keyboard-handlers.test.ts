@@ -6,11 +6,20 @@ class FakeTextInput implements IKeyboardBase {
     public ignoreKeys: Array<number | string> = [];
     public submitKeyCodes: Array<number | string> = [13, 'Enter'];
 
+    private listeners: Record<string, Array<(...args: any[]) => void>> = {};
+
     get text() {
         return this.currentText;
     }
-    on() {}
-    off() {}
+    on(event: string, handler: (event: any) => void) {
+        (this.listeners[event] ??= []).push(handler);
+    }
+    off(event: string, handler: (event: any) => void) {
+        this.listeners[event] = (this.listeners[event] ?? []).filter((h) => h !== handler);
+    }
+    emit(event: string, ...args: any[]) {
+        (this.listeners[event] ?? []).slice().forEach((handler) => handler(...args));
+    }
     change(text: string) {
         this.currentText = text;
     }
@@ -45,13 +54,17 @@ const keyPress = (keyCode: number) => ({
     preventDefault() {},
 });
 
-const keyDown = (keyCode: number, code: string) => ({
+const keyDown = (
+    keyCode: number,
+    code: string,
+    modifiers: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean } = {},
+) => ({
     keyCode,
     which: keyCode,
     code,
-    ctrlKey: false,
-    metaKey: false,
-    shiftKey: false,
+    ctrlKey: modifiers.ctrlKey ?? false,
+    metaKey: modifiers.metaKey ?? false,
+    shiftKey: modifiers.shiftKey ?? false,
     preventDefault() {},
 });
 
@@ -155,6 +168,63 @@ describe('KeyboardHandlers undo/redo state history', () => {
 
         expect(input.textStates).to.deep.equal(['a']);
         expect(input.currentStateIndex).to.equal(0);
+    });
+
+    it('ctrl+z emits a cancelable beforeinput (historyUndo); preventDefault blocks the undo', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97)); // 'a'
+        input.onKeyPress(keyPress(98)); // 'ab'
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onKeyDown(keyDown(90, 'KeyZ', { ctrlKey: true }));
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('historyUndo');
+        expect(seen[0].cancelable).to.equal(true);
+        expect(seen[0].defaultPrevented).to.equal(true);
+        expect(input.currentText, 'undo must be blocked').to.equal('ab');
+        expect(input.currentStateIndex).to.equal(1);
+    });
+
+    it('ctrl+shift+z emits a cancelable beforeinput (historyRedo); preventDefault blocks the redo', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97)); // 'a'
+        input.onKeyPress(keyPress(98)); // 'ab'
+        input.onKeyDown(keyDown(90, 'KeyZ', { ctrlKey: true })); // undo -> 'a'
+        expect(input.currentText).to.equal('a');
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => {
+            seen.push(event);
+            event.preventDefault();
+        });
+
+        input.onKeyDown(keyDown(90, 'KeyZ', { ctrlKey: true, shiftKey: true }));
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('historyRedo');
+        expect(input.currentText, 'redo must be blocked').to.equal('a');
+    });
+
+    it('undo proceeds when beforeinput is not prevented (meta key, mac-style)', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97)); // 'a'
+        input.onKeyPress(keyPress(98)); // 'ab'
+
+        const seen: any[] = [];
+        input.on('beforeinput', (event: any) => seen.push(event));
+
+        input.onKeyDown(keyDown(90, 'KeyZ', { metaKey: true }));
+
+        expect(seen).to.have.length(1);
+        expect(seen[0].inputType).to.equal('historyUndo');
+        expect(seen[0].defaultPrevented).to.equal(false);
+        expect(input.currentText).to.equal('a');
     });
 
     it('inserts a character exactly once for key-only keypress events (no keyCode)', () => {

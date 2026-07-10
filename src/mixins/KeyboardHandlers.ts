@@ -1,9 +1,39 @@
+/**
+ * Input type carried by cancelable `beforeinput` events, mirroring the DOM
+ * `InputEvent.inputType` values for history operations.
+ */
+export type HistoryInputType = 'historyUndo' | 'historyRedo';
+
+/**
+ * Cancelable event emitted as `'beforeinput'` right before an undo/redo is
+ * applied — the same contract the DOM uses for ctrl+z: call `preventDefault()`
+ * inside a listener to block the history change.
+ *
+ * @example
+ * ```typescript
+ * textField.on('beforeinput', (event) => {
+ *   if (event.inputType === 'historyUndo') {
+ *     event.preventDefault(); // handle undo yourself
+ *   }
+ * });
+ * ```
+ */
+export type BeforeInputEvent = {
+    inputType: HistoryInputType;
+    readonly cancelable: true;
+    defaultPrevented: boolean;
+    preventDefault(): void;
+    /** The keyboard event that triggered the history change. */
+    nativeEvent: Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>;
+};
+
 export type IKeyboardBase = {
     readonly text: string;
     ignoreKeys: Array<number | string>;
     submitKeyCodes: Array<number | string>;
     on: (event: string, handler: (event: any) => void) => void;
     off: (event: string, handler: (event: any) => void) => void;
+    emit: (event: string, ...args: any[]) => void;
     change: (text: string) => void;
     replaceSelectedWith: (text: string) => string; 
     getSelectedChars: () => string;
@@ -130,7 +160,17 @@ export default function <TBase extends Constructor>(Base: TBase){
             } else if(event.ctrlKey || event.metaKey) {
                 if(code == 90 || key === "KeyZ") { // z
                     const indexChange = event.shiftKey ? 1 : -1; // if shift is pressed we want to do redo behavior
-                    this.changeStateIndex(indexChange);
+                    const beforeInput: BeforeInputEvent = {
+                        inputType: indexChange === 1 ? 'historyRedo' : 'historyUndo',
+                        cancelable: true,
+                        defaultPrevented: false,
+                        preventDefault() { this.defaultPrevented = true; },
+                        nativeEvent: event,
+                    };
+                    this.emit('beforeinput', beforeInput);
+                    if(!beforeInput.defaultPrevented) {
+                        this.changeStateIndex(indexChange);
+                    }
                 } else if(code == 65 || key === "KeyA") { // a
                     event.preventDefault();
                     super.selectAll();
