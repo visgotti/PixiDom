@@ -369,9 +369,21 @@ export const installFakePixi = (version = '8.5.1'): FakePixiNamespace => {
     (globalThis as any).PIXI = fake;
     (globalThis as any).window = (globalThis as any).window ?? globalThis;
     if (typeof (globalThis as any).document === 'undefined') {
+        // Minimal functional event target so components that attach document
+        // listeners (wheel scroll, outside-click blur) can be driven in tests
+        // via document.dispatchEvent({ type, ... }).
+        const listeners: Record<string, Set<(event: any) => void>> = {};
         (globalThis as any).document = {
-            addEventListener() {},
-            removeEventListener() {},
+            addEventListener(type: string, handler: (event: any) => void) {
+                (listeners[type] ??= new Set()).add(handler);
+            },
+            removeEventListener(type: string, handler: (event: any) => void) {
+                listeners[type]?.delete(handler);
+            },
+            dispatchEvent(event: { type: string }) {
+                listeners[event.type]?.forEach((handler) => handler(event));
+                return true;
+            },
             createElement: (tag: string) => ({
                 tag,
                 width: 0,

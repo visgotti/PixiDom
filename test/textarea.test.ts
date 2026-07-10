@@ -130,6 +130,33 @@ describe('TextArea', () => {
         expect((area as any).cursorIndex).to.equal(15);
     });
 
+    it('scrolls with the mouse wheel while hovered, clamped to the content', () => {
+        const area = makeArea({ height: '20px' }); // 2 visible lines
+        area.text = 'a\nb\nc\nd'; // 40px content -> maxScroll 20
+
+        const wheel = (deltaY: number) =>
+            (document as any).dispatchEvent({ type: 'wheel', deltaY, cancelable: false });
+
+        wheel(15);
+        expect(area.scrollY, 'not hovered: wheel ignored').to.equal(0);
+
+        area.emit('pointerover');
+        wheel(15);
+        expect(area.scrollY).to.equal(15);
+        wheel(100);
+        expect(area.scrollY, 'clamped to maxScroll').to.equal(20);
+        wheel(-500);
+        expect(area.scrollY, 'clamped to 0').to.equal(0);
+
+        area.emit('pointerout');
+        wheel(15);
+        expect(area.scrollY, 'after pointerout: wheel ignored').to.equal(0);
+
+        area.emit('pointerover');
+        wheel(15);
+        expect(area.scrollY, 're-registers on the next hover').to.equal(15);
+    });
+
     it('emits change and enforces maxCharacterLength', () => {
         const area = new TextArea(
             'TestFont',

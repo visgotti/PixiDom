@@ -159,6 +159,7 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
     private clickedTimestamp: number = 0;
 
     private _scrollY: number = 0;
+    private _registeredScrollEvent: boolean = false;
     /** Sticky column (pixel x) preserved across consecutive vertical caret moves. */
     private desiredX: number | null = null;
 
@@ -195,6 +196,7 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
         super();
         this.font = font;
         this.checkForOutsideClick = this.checkForOutsideClick.bind(this);
+        this.handleWheelScroll = this.handleWheelScroll.bind(this);
 
         if(ignoreKeys) {
             this.ignoreKeys = ignoreKeys;
@@ -219,6 +221,7 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
         this.on('pointermove', this.handleMouseMove.bind(this));
         this.on('pointerup', this.handleMouseUp.bind(this));
         this.on('pointerupoutside', this.handleMouseUp.bind(this));
+        this.registerScrollEvents();
 
         const merged = { ...defaultStyleOptions(), ...(styleOptions ?? {}) };
         this.updateStyle(merged);
@@ -308,6 +311,24 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
             this._scrollY = clamped;
             this.redraw();
         }
+    }
+
+    /** Wheel scrolls while the pointer hovers the area (same pattern as ScrollList). */
+    private registerScrollEvents() {
+        this.once('pointerover', () => {
+            this._registeredScrollEvent = true;
+            document.addEventListener('wheel', this.handleWheelScroll, { passive: false });
+            this.once('pointerout', () => {
+                document.removeEventListener('wheel', this.handleWheelScroll);
+                this._registeredScrollEvent = false;
+                this.registerScrollEvents();
+            });
+        });
+    }
+
+    private handleWheelScroll(event: WheelEvent) {
+        if(event.cancelable) event.preventDefault();
+        this.scrollY += event.deltaY;
     }
 
     private ensureCaretVisible() {
@@ -726,6 +747,10 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
     public override destroy(options?: Parameters<PIXI.Container['destroy']>[0]) {
         this.blur();
         this.stopCursorAnimation();
+        if(this._registeredScrollEvent) {
+            document.removeEventListener('wheel', this.handleWheelScroll);
+            this._registeredScrollEvent = false;
+        }
         super.destroy(options);
     }
 }
