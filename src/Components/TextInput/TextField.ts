@@ -214,13 +214,10 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
         this.cursor = "text";
 
         this.on('pointerdown', this.handleMouseDown.bind(this));
-        //this.on('touchstart', this.handleMouseDown.bind(this));
 
         this.on('pointerup', this.handleMouseUp.bind(this));
-    //    this.on('touchend', this.handleMouseUp.bind(this));
 
         this.on('pointermove', this.handleMouseMove.bind(this));
-    //    this.on('touchmove', this.handleMouseMove.bind(this));
         this.on('pointerupoutside', this.handleMouseUp.bind(this));
 
         this.addChild(this.textboxMask);
@@ -229,7 +226,6 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
         this.addChild(this.cursorSprite);
 
         this.textSprite.mask = this.textboxMask;
-       // this.mask = this.textboxMask;
 
         this.updateStyle(_defaultStyleOptions);
 

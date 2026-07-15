@@ -1,14 +1,5 @@
 import { safeColorInt, normalizeColor as normalizeColorInput } from './color';
 
-let _global_pixi = typeof window !== 'undefined' ? (window as any).PIXI : null;
-
-export const setGlobalPixi = (pixi: any) => { 
-  if(typeof window !== 'undefined') {
-    (window as any).PIXI = pixi;
-    _global_pixi = pixi;
-  }
-}
-
 
 export interface IPixiLoader {
   baseUrl?: string;
@@ -660,19 +651,6 @@ const ensurePixiRendererSystemGuard = () => {
     if (!proto.__pixiDomPatchedAddSystems && typeof proto._addSystems === 'function') {
       proto._addSystems = function patchedAddSystems(systems: any) {
         let sanitized: any = systems;
-
-        if (typeof console !== 'undefined') {
-          try {
-            if (Array.isArray(systems)) {
-              const summary = systems.map((entry: any, index: number) => summarizeSystemEntry(entry, index));
-              console.log('[PixiDom] PIXI renderer systems input', JSON.stringify(summary));
-            } else if (systems && typeof systems === 'object') {
-              console.log('[PixiDom] PIXI renderer systems keys', Object.keys(systems));
-            }
-          } catch (err) {
-            console.warn('[PixiDom] Unable to inspect PIXI renderer systems', err);
-          }
-        }
 
         if (Array.isArray(sanitized)) {
           const invalidBefore = sanitized.filter((entry: any) => !isValidSystemEntry(entry));
@@ -1539,10 +1517,6 @@ const ensureBitmapFontManagerCachePatch = () => {
   });
 };
 
-export const isBitmapTextSupported = () => {
-  return !!resolveBitmapTextCtor();
-};
-
 export const createBitmapText = (text: string, style?: any): BitmapTextLike => {
   ensureBitmapFontManagerCachePatch();
   const Ctor = resolveBitmapTextCtor();
@@ -1966,252 +1940,6 @@ if (typeof PIXI !== 'undefined') {
     }
   }
 }
-interface EnsureBitmapFontOptions {
-  fontFamily: string;
-  fontSize: number;
-  chars?: string | string[];
-  resolution?: number;
-  textureWidth?: number;
-  textureHeight?: number;
-}
-
-export const ensureBitmapFont = (name: string, options: EnsureBitmapFontOptions) => {
-  if (hasBitmapFont(name)) {
-    return;
-  }
-  const pixiAny = PIXI as any;
-  if (pixiAny.BitmapFont?.from) {
-    const { fontFamily, fontSize, chars, resolution, textureWidth, textureHeight } = options;
-    const styleConfig = {
-      fontFamily,
-      fontSize,
-    };
-    const generationOptions = {
-      chars,
-      resolution,
-      textureWidth,
-      textureHeight,
-    };
-    pixiAny.BitmapFont.from(name, styleConfig, generationOptions);
-    return;
-  }
-  console.warn('BitmapFont.from is not available in this PIXI version; ensure font is preloaded.');
-};
-
-export function createTexture(texture: PIXI.Texture | PIXI.BaseTexture, rect: { x: number, y: number, width: number, height: number }) {
-  if(getPixiVersion() >= 8) {
-    return new PIXI.Texture({
-      source: 'source' in texture ? texture.source : 'baseTexture' in texture ? texture.baseTexture : texture,
-      frame: rect,
-    });
-  } else {
-    return new PIXI.Texture(
-      'baseTexture' in texture ? texture.baseTexture : texture,
-       new PIXI.Rectangle(rect.x, rect.y, rect.width, rect.height)
-    );
-  }
-}
-
-export async function ensureTextureLoaded(texture: PIXI.Texture) : Promise<PIXI.Texture>{
-  if(getPixiVersion() >= 8) {
-    return texture;
-  }
-  if(getPixiVersion() >= 5 && !texture.baseTexture.valid) {
-    return new Promise((resolve) => {
-      texture.baseTexture.once('loaded',async () => {
-        return resolve(texture);
-      });
-    })
-  } else if (getPixiVersion() < 5 && !texture.baseTexture.hasLoaded) {
-    return new Promise((resolve) => {
-      texture.baseTexture.once('loaded',async () => {
-        return resolve(texture);
-      });
-    })
-  }
-  return texture
-}
-
-type Renderer = {
-  render: (...args: any[]) => void;
-}
-export function renderRenderTexture(
-  renderer: Renderer,
-  renderTexture: PIXI.RenderTexture, 
-  sprite: PIXI.Graphics | PIXI.Sprite | PIXI.Container | PIXI.DisplayObject, 
-  clear=true,
-) {
-  assertGlobalPixi('renderRenderTexture');
-  if(getPixiVersion() >= 7) {
-    if(getPixiVersion() >= 8) {
-      renderer.render({
-        container: sprite,
-        target: renderTexture,
-        clear
-      })
-    } else {
-      renderer.render(sprite, {
-        renderTexture,
-        clear
-      })
-    }
-   
-  } else {
-    renderer.render(sprite, renderTexture, clear);
-  }
-}
-
-export function clearRenderTexture(
-  renderer: Renderer,
-  renderTexture: PIXI.RenderTexture,
-  rect: { x?: number, y?: number, width?: number, height?: number } = {}
-) {
-  assertGlobalPixi('clearRenderTexture');
-  if (!renderTexture) {
-    return;
-  }
-
-  const version = getPixiVersion();
-  const baseTexture = renderTexture.baseTexture as any;
-  const width = rect.width ?? renderTexture.width ?? baseTexture?.realWidth ?? baseTexture?.width ?? 0;
-  const height = rect.height ?? renderTexture.height ?? baseTexture?.realHeight ?? baseTexture?.height ?? 0;
-
-  if (width <= 0 || height <= 0) {
-    return;
-  }
-
-  const x = rect.x ?? 0;
-  const y = rect.y ?? 0;
-
-  const rendererAny = renderer as any;
-  const gl: WebGLRenderingContext | WebGL2RenderingContext | undefined =
-    rendererAny.gl ?? rendererAny._gl ?? rendererAny.context?.gl;
-
-  if (gl) {
-    const wasScissorEnabled = typeof gl.isEnabled === 'function' ? gl.isEnabled(gl.SCISSOR_TEST) : false;
-    let prevScissorBox: Int32Array | null = null;
-    if (typeof gl.getParameter === 'function') {
-      try {
-        prevScissorBox = gl.getParameter(gl.SCISSOR_BOX);
-      } catch (err) {
-        prevScissorBox = null;
-      }
-    }
-
-    let prevClearColor: Float32Array | number[] | null = null;
-    if (typeof gl.getParameter === 'function' && typeof gl.COLOR_CLEAR_VALUE !== 'undefined') {
-      try {
-        prevClearColor = gl.getParameter(gl.COLOR_CLEAR_VALUE);
-      } catch (err) {
-        prevClearColor = null;
-      }
-    }
-
-    if (version < 6 && version >= 4 && typeof rendererAny.bindRenderTexture === 'function') {
-      rendererAny.bindRenderTexture(renderTexture, null);
-      gl.enable(gl.SCISSOR_TEST);
-      gl.scissor(x, y, width, height);
-      if (typeof gl.clearColor === 'function') {
-        gl.clearColor(0, 0, 0, 0);
-      }
-      if (typeof gl.clear === 'function') {
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      } else if (typeof rendererAny.clear === 'function') {
-        rendererAny.clear();
-      }
-      rendererAny.bindRenderTexture(null, null);
-
-      if (!wasScissorEnabled) {
-        gl.disable(gl.SCISSOR_TEST);
-      } else if (prevScissorBox) {
-        gl.scissor(prevScissorBox[0], prevScissorBox[1], prevScissorBox[2], prevScissorBox[3]);
-      }
-
-      if (prevClearColor && typeof gl.clearColor === 'function') {
-        gl.clearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
-      }
-      return;
-    }
-
-    const rtSystem = rendererAny.renderTexture || rendererAny.texture || rendererAny._renderTexture;
-    if (rtSystem?.bind) {
-      rtSystem.bind(renderTexture);
-      gl.enable(gl.SCISSOR_TEST);
-      gl.scissor(x, y, width, height);
-      if (typeof gl.clearColor === 'function') {
-        gl.clearColor(0, 0, 0, 0);
-      }
-      if (typeof gl.clear === 'function') {
-        gl.clear(gl.COLOR_BUFFER_BIT);
-      }
-      rtSystem.bind(null);
-
-      if (!wasScissorEnabled) {
-        gl.disable(gl.SCISSOR_TEST);
-      } else if (prevScissorBox) {
-        gl.scissor(prevScissorBox[0], prevScissorBox[1], prevScissorBox[2], prevScissorBox[3]);
-      }
-
-      if (prevClearColor && typeof gl.clearColor === 'function') {
-        gl.clearColor(prevClearColor[0], prevClearColor[1], prevClearColor[2], prevClearColor[3]);
-      }
-      return;
-    }
-  }
-
-  const canvasRenderTarget = baseTexture?._canvasRenderTarget;
-  const canvasContext =
-    canvasRenderTarget?.context ||
-    baseTexture?.resource?.context ||
-    rendererAny?.rootContext ||
-    null;
-
-  if (canvasContext?.clearRect) {
-    rendererAny.renderTexture?.bind?.(renderTexture);
-    canvasContext.clearRect(x, y, width, height);
-    rendererAny.renderTexture?.bind?.(null);
-    return;
-  }
-
-  const graphics = new PIXI.Graphics();
-  graphics.beginFill(0, 0);
-  graphics.drawRect(x, y, width, height);
-  graphics.endFill();
-  renderRenderTexture(rendererAny, renderTexture, graphics, false);
-  graphics.destroy(true);
-}
-
-export function createRenderTexture(width: number, height: number, scaleMode?: number, resolution?: number) {
-  assertGlobalPixi('createRenderTexture');
-  if(getPixiVersion() >= 7) {
-    const opts: PIXI.RenderTextureCreateOptions = { width, height };
-    if(scaleMode !== undefined) {
-      opts.scaleMode = scaleMode;
-    }
-    if(resolution !== undefined) {
-      opts.resolution = resolution;
-    }
-    return PIXI.RenderTexture.create(opts)
-  } else {
-    return PIXI.RenderTexture.create(width, height, scaleMode, resolution)
-  }
-}
-
-export function getTextureFromImage(img: HTMLImageElement) {
-  assertGlobalPixi('getTextureFromImage');
-  if(getPixiVersion() >= 8) {
-    const source = new PIXI['CanvasSource']({
-      resource: img,
-    });
-    // create a texture
-    const texture = new PIXI.Texture({
-      source
-    } as any);
-    return texture;
-  } else {
-    return new PIXI.Texture(new PIXI.BaseTexture(img));
-  }
-}
 
 export const imageBitmapToCanvas = (imageBitmap: ImageBitmap) : HTMLCanvasElement => {
   const canvas = document.createElement('canvas');
@@ -2289,40 +2017,6 @@ export const imageBitmapToTexture = (
   const canvas = imageBitmapToCanvas(imageBitmap);
   return PIXI.Texture.from(canvas);
 }
-
-export function bufferToBase64 (arrayBuffer: ArrayBuffer) {
-  return btoa(
-      new Uint8Array(arrayBuffer)
-          .reduce((data, byte) => data + String.fromCharCode(byte), '')
-  );
-}
-
-export async function getTextureFromBlob(blob: Blob) : Promise<PIXI.Texture> {
-  assertGlobalPixi('getTextureFromBlob');
-  const URL = typeof window !== 'undefined' ? window.URL || window.webkitURL : undefined;
-  let blobURL: string;
-  let needRevoke = true;
-  try {
-      blobURL = URL?.createObjectURL(blob) ?? '';
-  } catch(err) {
-      needRevoke = false;
-      const base64 = bufferToBase64(blob as unknown as ArrayBuffer);
-      blobURL = 'data:image/png;base64,' + base64
-      // return PIXI.Texture.from(base64);
-  }
-  const img = new Image();
-  return new Promise((resolve, reject) => {
-      img.src = blobURL;
-      img.addEventListener("load", (event) => {
-          if(needRevoke) {
-              URL?.revokeObjectURL(blobURL);
-          }
-          return resolve(getTextureFromImage(img));
-      });// onload revoke the blob URL (because the browser has loaded and parsed the image data)
-  })
-}
-
-
 
 export function assertGlobalPixi(context?: string) {
   if (typeof PIXI === 'undefined') {

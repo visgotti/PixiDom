@@ -114,9 +114,3 @@ if (__pixiGlobalScope?.PIXI) {
     populatePixiGlobalObj(__pixiGlobalScope.PIXI);
 }
 
-let enforceWebgpu = false;
-
-export const enforceWebGPU = () => {
-  
-}
-

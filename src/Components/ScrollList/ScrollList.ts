@@ -190,9 +190,7 @@ export class ScrollList extends PIXI.Container {
         this.backgroundRect.drawRect(0, 0, this.__width, this.__height);
         this.backgroundRect.endFill();
         this.addChild(this.backgroundRect);
-      //  this.scrollRect.addChild(this.backgroundRect);
 
-     //   this.scrollMask.hitArea = new PIXI.Rectangle(0, 0, this.__width, this.__height);
 
         this.addChild(this.scrollMask);
         this.addChild(this.po);
@@ -208,7 +206,6 @@ export class ScrollList extends PIXI.Container {
             this.registerScrollEvents();
         }
 
-     //   this.initializeEventPropogation();
         if(!this.performanceOptions.disableTouchScroll) {
             this.scrollRect.onSwipe(this.applySwipe.bind(this));
 
@@ -267,7 +264,6 @@ export class ScrollList extends PIXI.Container {
             });
         }
 
-       // this.po.mask = this.scrollMask;
         if (scrollItemOptions && scrollItemOptions.length) {
             this.addScrollItems(
                 scrollItemOptions.map((opt) => {
@@ -433,17 +429,14 @@ export class ScrollList extends PIXI.Container {
 
             if(!option.visible && !wasVisible && setFirstVisible) {
                 // dont need to check any more
-               // console.log('adjust visibility took', Date.now() - start);
                 return;
             }
         }
         // if it gets here it didnt run into an ending visible which means the last item is visible.
         this.endingVisibleChildIndex = this.options.length - 1;
-    //    console.log('adjust visibility took', Date.now() - start);
     }
 
     private adjustOptions() {
-      //  console.log('adjust options', this.currentScroll);
         if(this.po && this.po.parent === this) {
             this.po.y = -this.currentScroll;
             this.adjustedIndex++;
@@ -528,7 +521,6 @@ export class ScrollList extends PIXI.Container {
             Math.min( this.maxHeight - this.__height, this._currentScroll + diff) :
             Math.max(0, this._currentScroll + diff);
 
-     //   if(this.scrollToDest === this.maxHeight - this.__height || this.scrollToDest === 0) {}
 
         const distanceToTraverse = Math.abs(this._currentScroll - this.scrollToDest);
         let maxTime;
