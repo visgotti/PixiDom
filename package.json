@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/postbuild-types.js",
     "build:demo": "npm run build && node scripts/build-gh-pages.js && node scripts/capture-demo-previews.js",
     "dev:demo": "npm run build && npx serve",
     "watch:lib": "vite build --watch",
@@ -37,14 +37,18 @@
     "docs": "typedoc",
     "docs:watch": "typedoc --watch",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build && npm test && npm run test:smoke"
   },
   "files": [
     "dist/**/*.js",
     "dist/**/*.cjs",
     "dist/**/*.mjs",
+    "dist/**/*.map",
     "dist/**/*.d.ts",
+    "dist/**/*.d.mts",
+    "dist/**/*.d.cts",
     "!dist/pixi-bootstrap.d.ts",
+    "!dist/**/*.d.ts.map",
     "README.md",
     "LICENSE"
   ],
@@ -54,6 +58,12 @@
   "peerDependencies": {
     "pixi.js": ">=4.0.0"
   },
+  "type": "commonjs",
+  "sideEffects": [
+    "./dist/index.cjs",
+    "./dist/index.es.mjs",
+    "./dist/pixidom.js"
+  ],
   "main": "dist/index.cjs",
   "module": "dist/index.es.mjs",
   "types": "dist/index.d.ts",
@@ -61,16 +71,14 @@
   "jsdelivr": "dist/pixidom.js",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "browser": "./dist/pixidom.js",
-      "import": "./dist/index.es.mjs",
-      "require": "./dist/index.cjs"
-    },
-    "./index": {
-      "types": "./dist/index.d.ts",
-      "browser": "./dist/pixidom.js",
-      "import": "./dist/index.es.mjs",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.es.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./package.json": "./package.json"
   },
@@ -82,6 +90,7 @@
     "@types/mocha": "^5.2.6",
     "@types/tween-functions": "^1.2.2",
     "chai": "^4.2.0",
+    "tween-functions": "^1.2.0",
     "mocha": "^6.1.4",
     "pixi.js": "^8.1.5",
     "ts-node": "^10.9.2",
@@ -97,8 +106,5 @@
   "bugs": {
     "url": "https://github.com/visgotti/PixiDom/issues"
   },
-  "homepage": "https://github.com/visgotti/PixiDom#readme",
-  "dependencies": {
-    "tween-functions": "^1.2.0"
-  }
+  "homepage": "https://github.com/visgotti/PixiDom#readme"
 }
