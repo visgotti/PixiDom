@@ -14,10 +14,41 @@
 
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import fs from 'node:fs';
 import process from 'node:process';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const distDir = path.resolve(here, '..', 'dist');
+const rootDir = path.resolve(here, '..');
+const distDir = path.resolve(rootDir, 'dist');
+
+// The built artifacts statically `import 'pixi.js'` (via src/pixi-bootstrap.ts,
+// which populates a global PIXI from the module when a bundler provides one).
+// This smoke test intentionally runs against only the downloaded dist/ — no
+// peer deps installed — so the bare `pixi.js` specifier would otherwise fail to
+// resolve. We supply a minimal resolvable stub package so the import links; the
+// real class shapes the artifact extends come from the `globalThis.PIXI` stub
+// below, which bootstrap leaves untouched because it's already set. When a real
+// pixi.js IS installed (local dev), we leave it alone and use it as-is.
+const ensureResolvablePixi = () => {
+    const stubPkgDir = path.join(rootDir, 'node_modules', 'pixi.js');
+    if (fs.existsSync(path.join(stubPkgDir, 'package.json'))) {
+        return; // real (or previously-stubbed) pixi.js already resolvable
+    }
+    fs.mkdirSync(stubPkgDir, { recursive: true });
+    fs.writeFileSync(
+        path.join(stubPkgDir, 'package.json'),
+        JSON.stringify({
+            name: 'pixi.js',
+            version: '0.0.0-smoke-stub',
+            main: 'index.cjs',
+            module: 'index.mjs',
+            exports: { '.': { import: './index.mjs', require: './index.cjs' } },
+        })
+    );
+    fs.writeFileSync(path.join(stubPkgDir, 'index.cjs'), 'module.exports = {};\n');
+    fs.writeFileSync(path.join(stubPkgDir, 'index.mjs'), 'export default {};\n');
+};
+ensureResolvablePixi();
 
 // Minimal PIXI stub so `extends PIXI.Container` / `new PIXI.Graphics` etc.
 // don't throw at module-load time. This is purely a load-time smoke test —
