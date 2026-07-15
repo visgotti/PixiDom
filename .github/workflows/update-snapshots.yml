@@ -1,0 +1,51 @@
+name: Update E2E Snapshots
+
+# Regenerates the Playwright visual baselines in the exact Linux environment CI
+# uses, then commits them back to the branch. Run this from the Actions tab
+# (workflow_dispatch) whenever a component's rendering intentionally changes and
+# the committed *-linux.png baselines need refreshing.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build library
+        run: npm run build
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+
+      # xvfb gives the headed pixi8-webgpu project a display to launch against.
+      - name: Update snapshots
+        run: xvfb-run -a npx playwright test --update-snapshots
+        env:
+          CI: true
+
+      - name: Commit updated Linux baselines
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 'tests/e2e/**/*-linux.png'
+          if git diff --staged --quiet; then
+            echo "No snapshot changes to commit."
+          else
+            git commit -m "Update Linux e2e snapshot baselines"
+            git push
+          fi

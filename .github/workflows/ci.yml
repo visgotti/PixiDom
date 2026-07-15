@@ -35,8 +35,10 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
+      # xvfb provides a virtual X display so the headed pixi8-webgpu project can
+      # launch a real (software) WebGPU adapter on the Linux runner.
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: xvfb-run -a npm run test:e2e
         env:
           CI: true
 

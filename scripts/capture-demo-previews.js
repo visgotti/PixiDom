@@ -84,7 +84,20 @@ async function captureComponent(page, name) {
     }
     console.log(`Capturing live-demo previews from ${SITE} on port ${PORT}`);
     const server = await startServer();
-    const browser = await chromium.launch();
+
+    // Preview thumbnails are a nice-to-have for the landing page grid; they must
+    // never block the actual site deploy. A missing browser or a flaky CDN load
+    // is logged as a warning and the build still succeeds (exit 0). The
+    // interactive demos themselves don't depend on these PNGs at build time.
+    let browser;
+    try {
+        browser = await chromium.launch();
+    } catch (err) {
+        console.warn(`  ! skipping previews - could not launch browser: ${err.message}`);
+        server.close();
+        process.exit(0);
+    }
+
     const context = await browser.newContext({
         viewport: { width: 800, height: 600 },
         deviceScaleFactor: 2,
@@ -93,19 +106,22 @@ async function captureComponent(page, name) {
 
     page.on('pageerror', (err) => console.warn(`  [pageerror] ${err.message}`));
 
-    let exitCode = 0;
+    let failures = 0;
     try {
         for (const name of COMPONENTS) {
             try {
                 await captureComponent(page, name);
             } catch (err) {
-                console.error(`  ! failed to capture ${name}: ${err.message}`);
-                exitCode = 1;
+                console.warn(`  ! failed to capture ${name}: ${err.message}`);
+                failures++;
             }
         }
     } finally {
         await browser.close();
         server.close();
     }
-    process.exit(exitCode);
+    if (failures) {
+        console.warn(`  ${failures}/${COMPONENTS.length} previews failed to capture (non-fatal).`);
+    }
+    process.exit(0);
 })();
