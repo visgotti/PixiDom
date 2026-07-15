@@ -32,9 +32,10 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      # xvfb gives the headed pixi8-webgpu project a display to launch against.
+      # On CI the headed pixi8-webgpu project is skipped (see playwright.config.ts),
+      # so only headless projects run here - no virtual display needed.
       - name: Update snapshots
-        run: xvfb-run -a npx playwright test --update-snapshots
+        run: npx playwright test --update-snapshots
         env:
           CI: true
 

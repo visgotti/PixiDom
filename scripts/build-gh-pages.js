@@ -96,6 +96,4 @@ if (fs.existsSync(snapshotReportHtml)) {
     console.warn('    ! snapshot-report.html not found. Run `npm run snapshot-report` first.');
 }
 
-// previews/<component>.png are captured by scripts/capture-demo-previews.js,
-// which is run after this script in `npm run build:demo`.
 console.log('Done.');

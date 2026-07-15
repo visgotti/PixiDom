@@ -20,7 +20,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && node scripts/postbuild-types.js",
-    "build:demo": "npm run build && node scripts/build-gh-pages.js && node scripts/capture-demo-previews.js",
+    "build:demo": "npm run build && node scripts/build-gh-pages.js",
     "dev:demo": "npm run build && npx serve",
     "watch:lib": "vite build --watch",
     "preview": "vite preview",
@@ -50,6 +50,7 @@
     "!dist/pixi-bootstrap.d.ts",
     "!dist/**/*.d.ts.map",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "engines": {
