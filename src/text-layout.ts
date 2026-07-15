@@ -259,6 +259,38 @@ export function moveCaretVertically(
 }
 
 /**
+ * Move a caret by `lineDelta` visual lines (negative = up), keeping the
+ * horizontal position — pass `desiredX` to preserve a sticky column across
+ * repeated moves. Unlike {@link moveCaretVertically}, overshooting the first
+ * or last line clamps to that line (preserving the column) rather than
+ * jumping to the very start/end of the text — the behavior wanted for
+ * PageUp/PageDown.
+ */
+export function moveCaretByLines(
+    layout: TextLayout,
+    index: number,
+    lineDelta: number,
+    desiredX?: number,
+): number {
+    const caret = caretFromIndex(layout, index);
+    const targetLine = Math.max(0, Math.min(layout.lines.length - 1, caret.line + lineDelta));
+    const line = layout.lines[targetLine];
+    return line.start + caretColFromX(line.positions, desiredX ?? caret.x);
+}
+
+/**
+ * The `[start, end]` source indices spanning the visual line that contains
+ * `index` — `start` is the line's first character, `end` is the caret
+ * position at the end of its visible text (before any newline). Useful for
+ * Home/End caret movement.
+ */
+export function lineBounds(layout: TextLayout, index: number): { start: number; end: number } {
+    const caret = caretFromIndex(layout, index);
+    const line = layout.lines[caret.line];
+    return { start: line.start, end: line.start + line.text.length };
+}
+
+/**
  * Highlight rectangles for the selection `[start, end)` — one rect per line
  * the selection touches. Lines whose covered span is empty (e.g. only the
  * newline is selected) produce no rect.

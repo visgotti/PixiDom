@@ -14,6 +14,8 @@ import {
     caretFromIndex,
     indexFromPoint,
     moveCaretVertically,
+    moveCaretByLines,
+    lineBounds,
     selectionRects,
     type MeasureGlyph,
     type TextLayout,
@@ -573,6 +575,28 @@ class TextAreaClass extends PIXI.Container implements IKeyboardBase {
         this.redraw();
     }
 
+    /** Move the caret to the start or end of its current visual line (Home/End). */
+    public moveCaretToLineEdge(edge: 'start' | 'end') {
+        const bounds = lineBounds(this.layout, this.cursorIndex);
+        this.cursorIndex = edge === 'start' ? bounds.start : bounds.end;
+        this.desiredX = null;
+        this.clearRange();
+        this.ensureCaretVisible();
+        this.redraw();
+    }
+
+    /** Move the caret up or down by one viewport of lines (PageUp/PageDown). */
+    public moveCaretPage(direction: -1 | 1) {
+        const pageLines = Math.max(1, Math.floor(this.innerHeight / this.layout.lineHeight));
+        if(this.desiredX === null) {
+            this.desiredX = caretFromIndex(this.layout, this.cursorIndex).x;
+        }
+        this.cursorIndex = moveCaretByLines(this.layout, this.cursorIndex, direction * pageLines, this.desiredX);
+        this.clearRange();
+        this.ensureCaretVisible();
+        this.redraw();
+    }
+
     // ---- text mutation (IKeyboardBase) ----
 
     public replaceSelectedWith(replaceWith: string) : string {
@@ -761,6 +785,18 @@ class TextAreaWithKeyboard extends KeyboardHandlerMixin(TextAreaClass) {
     }
     public override onArrowDown() {
         this.moveCaretLine(1);
+    }
+    public override onHome() {
+        this.moveCaretToLineEdge('start');
+    }
+    public override onEnd() {
+        this.moveCaretToLineEdge('end');
+    }
+    public override onPageUp() {
+        this.moveCaretPage(-1);
+    }
+    public override onPageDown() {
+        this.moveCaretPage(1);
     }
 }
 

@@ -173,6 +173,26 @@ export default function <TBase extends Constructor>(Base: TBase){
         public onArrowUp(_event?: unknown){};
         /** Overridable hook: ArrowDown keydown (multi-line inputs move the caret down a line). */
         public onArrowDown(_event?: unknown){};
+        /**
+         * Overridable hook: Home keydown. Default moves the caret to the start
+         * of the text; multi-line inputs override to go to the line start.
+         */
+        public onHome(_event?: unknown){ super.setCursor(0); };
+        /**
+         * Overridable hook: End keydown. Default moves the caret to the end of
+         * the text; multi-line inputs override to go to the line end.
+         */
+        public onEnd(_event?: unknown){ super.setCursor(this.text.length); };
+        /**
+         * Overridable hook: PageUp keydown. Default jumps to the start of the
+         * text; multi-line inputs override to move up one viewport of lines.
+         */
+        public onPageUp(_event?: unknown){ super.setCursor(0); };
+        /**
+         * Overridable hook: PageDown keydown. Default jumps to the end of the
+         * text; multi-line inputs override to move down one viewport of lines.
+         */
+        public onPageDown(_event?: unknown){ super.setCursor(this.text.length); };
 
         public onKeyDown(event: Pick<KeyboardEvent, 'keyCode' | 'which' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'preventDefault' | 'code'>) {
             const code = event.keyCode ?? event.which;
@@ -198,6 +218,14 @@ export default function <TBase extends Constructor>(Base: TBase){
                 this.onArrowUp(event);
             } else if (code == 40 || key === "ArrowDown") { // down
                 this.onArrowDown(event);
+            } else if (code == 36 || key === "Home") { // home
+                this.onHome(event);
+            } else if (code == 35 || key === "End") { // end
+                this.onEnd(event);
+            } else if (code == 33 || key === "PageUp") { // page up
+                this.onPageUp(event);
+            } else if (code == 34 || key === "PageDown") { // page down
+                this.onPageDown(event);
             } else if(code == 8 || key === "Backspace") { // backspace
                 if(this.dispatchBeforeInput('deleteContentBackward', null, event)) {
                     if(super.getSelectedRange()) {

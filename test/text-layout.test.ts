@@ -4,6 +4,8 @@ import {
     caretFromIndex,
     indexFromPoint,
     moveCaretVertically,
+    moveCaretByLines,
+    lineBounds,
     selectionRects,
     caretColFromX,
     glyphsToCaretPositions,
@@ -139,6 +141,44 @@ describe('moveCaretVertically', () => {
         const layout = layoutText('abc\ndef', mono());
         expect(moveCaretVertically(layout, 2, -1)).to.equal(0);
         expect(moveCaretVertically(layout, 5, 1)).to.equal(7);
+    });
+});
+
+describe('moveCaretByLines', () => {
+    const layout = () => layoutText('a\nb\nc\nd', mono()); // indices: a0 b2 c4 d6, len 7
+
+    it('moves the caret by an arbitrary number of lines, keeping the column', () => {
+        expect(moveCaretByLines(layout(), 0, 2)).to.equal(4); // line 0 -> line 2
+        expect(moveCaretByLines(layout(), 6, -2)).to.equal(2); // line 3 -> line 1
+    });
+
+    it('clamps to the first/last line instead of jumping to the text ends', () => {
+        expect(moveCaretByLines(layout(), 0, 10)).to.equal(6); // clamp to last line, col 0
+        expect(moveCaretByLines(layout(), 6, -10)).to.equal(0); // clamp to first line, col 0
+    });
+
+    it('honors a desiredX wider than the target line', () => {
+        const l = layoutText('abcdef\ngh\nij', mono());
+        // From line 0 col 5 (x=30) down one line into 'gh' clamps to its end (col 2).
+        expect(moveCaretByLines(l, 5, 1, 30)).to.equal(9);
+    });
+
+    it('a zero delta returns the same caret index', () => {
+        expect(moveCaretByLines(layout(), 4, 0)).to.equal(4);
+    });
+});
+
+describe('lineBounds', () => {
+    it('returns the start and end indices of the visual line at a caret index', () => {
+        const layout = layoutText('abc\ndef', mono()); // line 0: 0..3, line 1: 4..7
+        expect(lineBounds(layout, 1)).to.deep.equal({ start: 0, end: 3 });
+        expect(lineBounds(layout, 3)).to.deep.equal({ start: 0, end: 3 });
+        expect(lineBounds(layout, 5)).to.deep.equal({ start: 4, end: 7 });
+    });
+
+    it('uses the wrapped line for soft-wrap boundaries', () => {
+        const layout = layoutText('abcdef', { ...mono(), wrapWidth: 18 }); // 'abc' | 'def'
+        expect(lineBounds(layout, 3)).to.deep.equal({ start: 3, end: 6 });
     });
 });
 

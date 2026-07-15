@@ -30,8 +30,13 @@ class FakeTextInput implements IKeyboardBase {
     getSelectedChars() {
         return '';
     }
-    setCursor() {}
-    moveCursor() {}
+    public cursor = 0;
+    setCursor(index: number) {
+        this.cursor = index;
+    }
+    moveCursor(delta: number) {
+        this.cursor += delta;
+    }
     removeLeftOfCursor() {
         this.currentText = this.currentText.slice(0, -1);
     }
@@ -363,6 +368,49 @@ describe('KeyboardHandlers undo/redo state history', () => {
 
         expect(input.currentText).to.equal('a');
         expect(input.submitted).to.equal(1);
+    });
+
+    it('Home/End move the caret to the start/end of the whole text by default', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97)); // 'a'
+        input.onKeyPress(keyPress(98)); // 'ab'
+        input.cursor = 1;
+
+        input.onKeyDown(keyDown(36, 'Home'));
+        expect(input.cursor).to.equal(0);
+
+        input.onKeyDown(keyDown(35, 'End'));
+        expect(input.cursor).to.equal(2);
+    });
+
+    it('PageUp/PageDown default to the start/end of the whole text', () => {
+        const input = new KeyboardInput();
+        input.onKeyPress(keyPress(97));
+        input.onKeyPress(keyPress(98));
+        input.cursor = 1;
+
+        input.onKeyDown(keyDown(33, 'PageUp'));
+        expect(input.cursor).to.equal(0);
+
+        input.onKeyDown(keyDown(34, 'PageDown'));
+        expect(input.cursor).to.equal(2);
+    });
+
+    it('Home/End/PageUp/PageDown invoke overridable hooks', () => {
+        const calls: string[] = [];
+        class NavInput extends KeyboardInput {
+            override onHome() { calls.push('home'); }
+            override onEnd() { calls.push('end'); }
+            override onPageUp() { calls.push('pageup'); }
+            override onPageDown() { calls.push('pagedown'); }
+        }
+        const input = new NavInput();
+        input.onKeyDown(keyDown(36, 'Home'));
+        input.onKeyDown(keyDown(35, 'End'));
+        input.onKeyDown(keyDown(33, 'PageUp'));
+        input.onKeyDown(keyDown(34, 'PageDown'));
+
+        expect(calls).to.deep.equal(['home', 'end', 'pageup', 'pagedown']);
     });
 
     it('ArrowUp/ArrowDown keydowns invoke the overridable hooks', () => {

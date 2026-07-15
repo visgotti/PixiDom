@@ -157,6 +157,46 @@ describe('TextArea', () => {
         expect(area.scrollY, 're-registers on the next hover').to.equal(15);
     });
 
+    it('Home/End move the caret to the visual line start/end', () => {
+        const area = makeArea();
+        area.text = 'abc\ndef';
+        area.setCursor(5); // 'd|ef' on line 1
+
+        area.onKeyDown(keyDown(36, 'Home'));
+        expect((area as any).cursorIndex).to.equal(4); // start of 'def'
+
+        area.onKeyDown(keyDown(35, 'End'));
+        expect((area as any).cursorIndex).to.equal(7); // end of 'def'
+    });
+
+    it('Home/End respect soft-wrapped visual lines, not paragraphs', () => {
+        const area = makeArea({ width: '48px' }); // 'hello ' | 'world'
+        area.text = 'hello world';
+        area.setCursor(8); // 'wo|rld' on the wrapped line
+
+        area.onKeyDown(keyDown(36, 'Home'));
+        expect((area as any).cursorIndex).to.equal(6); // start of 'world'
+
+        area.onKeyDown(keyDown(35, 'End'));
+        expect((area as any).cursorIndex).to.equal(11);
+    });
+
+    it('PageDown/PageUp move the caret by one viewport of lines', () => {
+        const area = makeArea({ height: '20px' }); // 2 visible lines per page
+        area.text = 'a\nb\nc\nd\ne\nf'; // indices a0 b2 c4 d6 e8 f10
+
+        area.setCursor(0);
+        area.onKeyDown(keyDown(34, 'PageDown'));
+        expect((area as any).cursorIndex).to.equal(4); // down 2 lines -> 'c'
+
+        area.onKeyDown(keyDown(34, 'PageDown'));
+        expect((area as any).cursorIndex).to.equal(8); // -> 'e'
+        expect(area.scrollY, 'viewport follows the caret').to.be.greaterThan(0);
+
+        area.onKeyDown(keyDown(33, 'PageUp'));
+        expect((area as any).cursorIndex).to.equal(4); // back up 2 lines
+    });
+
     it('emits change and enforces maxCharacterLength', () => {
         const area = new TextArea(
             'TestFont',
