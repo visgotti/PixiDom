@@ -29,9 +29,31 @@ declare global {
         }
 
         // ---- event types ----
+        /**
+         * The native/original event riding a normalized pointer event. ALL members are optional
+         * on purpose: real DOM events (PointerEvent/MouseEvent/WheelEvent/TouchEvent) must be
+         * ASSIGNABLE to this shape, and DOM lib types carry no index signature — a required
+         * member or catch-all here rejects the very events consumers store in it.
+         */
+        interface FederatedOriginalEvent {
+            movementX?: number;
+            movementY?: number;
+            clientX?: number;
+            clientY?: number;
+            button?: number;
+            buttons?: number;
+            which?: number;
+            pointerType?: string;
+            deltaX?: number;
+            deltaY?: number;
+            timeStamp?: number;
+            type?: string;
+            preventDefault?: () => void;
+            stopPropagation?: () => void;
+        }
         interface FederatedEventData {
             global: Point;
-            originalEvent?: { movementX: number; movementY: number; [key: string]: unknown };
+            originalEvent?: FederatedOriginalEvent;
             [key: string]: unknown;
         }
         interface FederatedPointerEvent {
@@ -45,7 +67,7 @@ declare global {
             type: string;
             button: number;
             buttons: number;
-            originalEvent?: { movementX: number; movementY: number; [key: string]: unknown };
+            originalEvent?: FederatedOriginalEvent;
             [key: string]: unknown;
         }
         type InteractionEvent = FederatedPointerEvent;
