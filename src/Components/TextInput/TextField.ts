@@ -83,17 +83,6 @@ const defaultStyleOptions = function() : StyleOptionsParams {
 const DEFAULT_FONT_COLOR = 0x000000;
 const DEFAULT_HIGHLIGHTED_FONT_COLOR = 0xffffff;
 
-const coerceColorOrFallback = (value: unknown, fallback: number): NormalizedColor => {
-    if (value === undefined || value === null) {
-        return normalizeColor(fallback);
-    }
-    try {
-        return normalizeColor(value as Color);
-    } catch (_err) {
-        return normalizeColor(fallback);
-    }
-};
-
 const lengthFieldsToValidate = ["width", "height", "cursorHeight"];
 const colorFieldsToNormalize = new Set([
     "borderColor",
@@ -251,8 +240,12 @@ class TextFieldClass extends PIXI.Container implements IKeyboardBase {
                 target[key] = source[key];
             }
         }
-        this.styleOptions.fontColor = coerceColorOrFallback(this.styleOptions.fontColor, DEFAULT_FONT_COLOR);
-        this.styleOptions.highlightedFontColor = coerceColorOrFallback(this.styleOptions.highlightedFontColor, DEFAULT_HIGHLIGHTED_FONT_COLOR);
+        // Guarantee the two required font colors are always populated, without
+        // re-normalizing values already stored as `{ value, alpha }` above —
+        // normalizeColor rejects its own output, so re-running it here would
+        // discard every caller-supplied font color.
+        this.styleOptions.fontColor ??= normalizeColor(DEFAULT_FONT_COLOR);
+        this.styleOptions.highlightedFontColor ??= normalizeColor(DEFAULT_HIGHLIGHTED_FONT_COLOR);
         this.redraw();
     }
 
